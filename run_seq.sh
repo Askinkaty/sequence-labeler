@@ -6,7 +6,7 @@
 #SBATCH --cpus-per-task=5
 #SBATCH --mem=15G
 #SBATCH --ntasks=1
-#SBATCH --time=1:00:00
+#SBATCH --time=24:00:00
 #SBATCH --gres=gpu:v100:1
 
 module load gcc/8.3.0 cuda/10.1.168
