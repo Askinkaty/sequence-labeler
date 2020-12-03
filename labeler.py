@@ -444,7 +444,7 @@ class SequenceLabeler(object):
             dump = pickle.load(f)
 
             # for safety, so we don't overwrite old models
-            dump["config"]["save"] = None
+            # dump["config"]["save"] = None
 
             labeler = SequenceLabeler(dump["config"])
             labeler.UNK = dump["UNK"]
