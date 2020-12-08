@@ -26,15 +26,15 @@ import modeling
 import tokenization
 
 
-BERT_MODEL = 'rubert_cased_L-12_H-768_A-12_pt'
+BERT_MODEL = 'rubert_cased_L-12_H-768_A-12_v2'
 BERT_PRETRAINED_DIR = '/projappl/project_2002016/gramcor/bert-pretraned/' + BERT_MODEL
 LAYERS = [-1,-2,-3,-4]
 NUM_TPU_CORES = 8
 MAX_SEQ_LENGTH = 87
 BERT_CONFIG = BERT_PRETRAINED_DIR + '/bert_config.json'
-CHKPT_DIR = BERT_PRETRAINED_DIR + '/bert_model.ckpt'
+CHKPT_DIR = BERT_PRETRAINED_DIR + '/bert_model.ckpt.data-00000-of-00001'
 VOCAB_FILE = BERT_PRETRAINED_DIR + '/vocab.txt'
-INIT_CHECKPOINT = BERT_PRETRAINED_DIR + '/bert_model.ckpt'
+INIT_CHECKPOINT = BERT_PRETRAINED_DIR + '/bert_model.ckpt.data-00000-of-00001'
 BATCH_SIZE = 128
 
 
@@ -346,4 +346,4 @@ def get_features(input_text, dim=768):
 
 if __name__ == '__main__':
     text = ['Оставь надежду всяк сюда входящий.']
-    print(get_features(text))
+    # print(get_features(text))
