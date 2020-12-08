@@ -360,7 +360,7 @@ def get_token_embeddings(feature_dict):
                 vector = v
             else:
                 token_piece += k.replace('##', '')
-                vector = np.add(vector, k)
+                vector = np.add(vector, v)
     return result_dict
 
 
