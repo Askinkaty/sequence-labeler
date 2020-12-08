@@ -4,6 +4,7 @@ import re
 import numpy
 from tensorflow.python.framework import ops
 from tensorflow.python.ops import math_ops
+from embedder import get_features
 
 try:
     import cPickle as pickle
@@ -81,7 +82,7 @@ class SequenceLabeler(object):
                     self.embedding_vocab.add(w)
             word2id_revised = collections.OrderedDict()
             for word in self.word2id:
-                if word in embedding_vocab and word not in word2id_revised:
+                if word in self.embedding_vocab and word not in word2id_revised:
                     word2id_revised[word] = len(word2id_revised)
             self.word2id = word2id_revised
 
@@ -89,6 +90,8 @@ class SequenceLabeler(object):
         print("n_chars: " + str(len(self.char2id)))
         print("n_labels: " + str(len(self.label2id)))
         print("n_singletons: " + str(len(self.singletons)))
+
+
 
 
     def construct_network(self):

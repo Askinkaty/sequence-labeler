@@ -14,6 +14,8 @@ except:
 
 from labeler import SequenceLabeler
 from evaluator import SequenceLabelingEvaluator
+from embedder import get_features
+
 
 def read_input_files(file_paths, max_sentence_length=-1):
     """
