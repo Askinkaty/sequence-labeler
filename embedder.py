@@ -346,4 +346,6 @@ def get_features(input_text, dim=768):
 
 if __name__ == '__main__':
     text = ['Оставь надежду всяк сюда входящий.']
-    print(get_features(text))
+    result = get_features(text)
+    print(result.keys())
+    print(len(result))
