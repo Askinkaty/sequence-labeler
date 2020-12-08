@@ -310,6 +310,7 @@ def get_features(input_text, dim=768):
         unique_id_to_feature[feature.unique_id] = feature
 
     model_fn = model_fn_builder(
+        use_tpu=False,
         bert_config=bert_config,
         init_checkpoint=INIT_CHECKPOINT,
         layer_indexes=layer_indexes,
@@ -318,6 +319,7 @@ def get_features(input_text, dim=768):
     # If TPU is not available, this will fall back to normal Estimator on CPU
     # or GPU.
     estimator = tf.contrib.tpu.TPUEstimator(
+        use_tpu=False,
         model_fn=model_fn,
         config=run_config,
         predict_batch_size=BATCH_SIZE,
