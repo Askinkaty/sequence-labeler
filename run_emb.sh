@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 #SBATCH --account=project_2002016
-#SBATCH --job-name=seq_ged
+#SBATCH --job-name=emb
 #SBATCH --partition=gpu
 #SBATCH --cpus-per-task=5
 #SBATCH --mem=15G
@@ -11,9 +11,9 @@
 
 module load gcc/8.3.0 cuda/10.1.168
 
-export DIR=/projappl/project_2002016/sequence-labeler
+export DIR=/projappl/project_2002016
 cd $DIR
 
 conda activate transf
 
-srun python3 embedder.py
+srun python3 ./sequence-labeler/embedder.py
