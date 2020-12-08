@@ -345,7 +345,10 @@ class SequenceLabeler(object):
         singletons = self.singletons if is_training is True else None
         singletons_prob = self.config["singletons_prob"] if is_training is True else 0.0
         for i in range(len(batch)):
-            features = get_features(batch[i])
+            print(batch[i])
+            sentence = ' '.join(batch[i]).strip()
+            print(sentence)
+            features = get_features([sentence])
             tokens_embeddings = get_token_embeddings(features)
             for j in range(len(batch[i])):
                 print(batch[i][j])
