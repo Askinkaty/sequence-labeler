@@ -130,9 +130,8 @@ def process_sentences(data, labeler, is_training, learningrate, config, name):
     """
     evaluator = SequenceLabelingEvaluator(config["main_label"], labeler.label2id, config["conll_eval"])
     batches_of_sentence_ids = create_batches_of_sentence_ids(data, config["batch_equal_size"], config["max_batch_size"])
-    if is_training == True:
+    if is_training is True:
         random.shuffle(batches_of_sentence_ids)
-
     for sentence_ids_in_batch in batches_of_sentence_ids:
         batch = [data[i] for i in sentence_ids_in_batch]
         cost, predicted_labels, predicted_probs = labeler.process_batch(batch, is_training, learningrate)

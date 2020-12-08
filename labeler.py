@@ -4,12 +4,14 @@ import re
 import numpy
 from tensorflow.python.framework import ops
 from tensorflow.python.ops import math_ops
-from embedder import get_features
+import sys
+from embedder import get_token_embeddings
 
 try:
     import cPickle as pickle
 except:
     import pickle
+
 
 class SequenceLabeler(object):
     def __init__(self, config):
@@ -102,6 +104,7 @@ class SequenceLabeler(object):
         self.label_ids = tf.placeholder(tf.int32, [None, None], name="label_ids")
         self.learningrate = tf.placeholder(tf.float32, name="learningrate")
         self.is_training = tf.placeholder(tf.int32, name="is_training")
+        self.context_emb = tf.placeholder(tf.float32, [None, None, None], name="context_emb")
 
         self.loss = 0.0
         input_tensor = None
@@ -125,7 +128,9 @@ class SequenceLabeler(object):
         input_vector_size = self.config["word_embedding_size"]
 
         if self.config["char_embedding_size"] > 0 and self.config["char_recurrent_size"] > 0:
-            with tf.variable_scope("chars"), tf.control_dependencies([tf.assert_equal(tf.shape(self.char_ids)[2], tf.reduce_max(self.word_lengths), message="Char dimensions don't match")]):
+            with tf.variable_scope("chars"), tf.control_dependencies([tf.assert_equal(tf.shape(self.char_ids)[2],
+                                                                                      tf.reduce_max(self.word_lengths),
+                                                                                      message="Char dimensions don't match")]):
                 self.char_embeddings = tf.get_variable("char_embeddings", 
                     shape=[len(self.char2id), self.config["char_embedding_size"]], 
                     initializer=self.initializer, 
@@ -306,26 +311,25 @@ class SequenceLabeler(object):
         self.session.run(self.word_embeddings.assign(embedding_matrix))
         print("n_preloaded_embeddings: " + str(len(loaded_embeddings)))
 
-
-    def translate2id(self, token, token2id, unk_token, lowercase=False, replace_digits=False, singletons=None, singletons_prob=0.0):
-        if lowercase == True:
+    def translate2id(self, token, token2id, unk_token, lowercase=False, replace_digits=False, singletons=None,
+                     singletons_prob=0.0):
+        if lowercase is True:
             token = token.lower()
-        if replace_digits == True:
+        if replace_digits is True:
             token = re.sub(r'\d', '0', token)
-
         token_id = None
-        if singletons != None and token in singletons and token in token2id and unk_token != None and numpy.random.uniform() < singletons_prob:
+        if singletons is not None and token in singletons and token in token2id and unk_token is not None and \
+                numpy.random.uniform() < singletons_prob:
             token_id = token2id[unk_token]
         elif token in token2id:
             token_id = token2id[token]
-        elif unk_token != None:
+        elif unk_token is not None:
             token_id = token2id[unk_token]
         else:
             raise ValueError("Unable to handle value, no UNK token: " + str(token))
         return token_id
 
-
-    def create_input_dictionary_for_batch(self, batch, is_training, learningrate):
+    def create_input_dictionary_for_batch(self, batch, is_training, learningrate, bert_emb_dim=None):
         sentence_lengths = numpy.array([len(sentence) for sentence in batch])
         max_sentence_length = sentence_lengths.max()
         max_word_length = numpy.array([numpy.array([len(word[0]) for word in sentence]).max() for sentence in batch]).max()
@@ -336,18 +340,29 @@ class SequenceLabeler(object):
         char_ids = numpy.zeros((len(batch), max_sentence_length, max_word_length), dtype=numpy.int32)
         word_lengths = numpy.zeros((len(batch), max_sentence_length), dtype=numpy.int32)
         label_ids = numpy.zeros((len(batch), max_sentence_length), dtype=numpy.int32)
+        context_emb = numpy.zeros((len(batch), max_sentence_length, bert_emb_dim), dtype=float)
 
-        singletons = self.singletons if is_training == True else None
-        singletons_prob = self.config["singletons_prob"] if is_training == True else 0.0
+        singletons = self.singletons if is_training is True else None
+        singletons_prob = self.config["singletons_prob"] if is_training is True else 0.0
         for i in range(len(batch)):
+            tokens_embeddings = get_token_embeddings(batch[i])
             for j in range(len(batch[i])):
-                word_ids[i][j] = self.translate2id(batch[i][j][0], self.word2id, self.UNK, lowercase=self.config["lowercase"], replace_digits=self.config["replace_digits"], singletons=singletons, singletons_prob=singletons_prob)
+                print(batch[i][j])
+                print(len(tokens_embeddings[batch[i][j]]))
+                context_emb[i][j] = tokens_embeddings[batch[i][j]]
+                word_ids[i][j] = self.translate2id(batch[i][j][0], self.word2id, self.UNK,
+                                                   lowercase=self.config["lowercase"],
+                                                   replace_digits=self.config["replace_digits"],
+                                                   singletons=singletons, singletons_prob=singletons_prob)
                 label_ids[i][j] = self.translate2id(batch[i][j][-1], self.label2id, None)
                 word_lengths[i][j] = min(len(batch[i][j][0]), max_word_length)
                 for k in range(min(len(batch[i][j][0]), max_word_length)):
                     char_ids[i][j][k] = self.translate2id(batch[i][j][0][k], self.char2id, self.CUNK)
 
-        input_dictionary = {self.word_ids: word_ids, self.char_ids: char_ids, self.sentence_lengths: sentence_lengths, self.word_lengths: word_lengths, self.label_ids: label_ids, self.learningrate: learningrate, self.is_training: is_training}
+        input_dictionary = {self.word_ids: word_ids, self.char_ids: char_ids, self.sentence_lengths: sentence_lengths,
+                            self.word_lengths: word_lengths, self.label_ids: label_ids,
+                            self.learningrate: learningrate, self.is_training: is_training,
+                            self.context_emb: context_emb}
         return input_dictionary
 
 
@@ -369,21 +384,24 @@ class SequenceLabeler(object):
         viterbi_score = numpy.max(trellis[-1])
         return viterbi, viterbi_score, trellis
 
-
     def process_batch(self, batch, is_training, learningrate):
-        feed_dict = self.create_input_dictionary_for_batch(batch, is_training, learningrate)
-
-        if self.config["crf_on_top"] == True:
+        feed_dict = self.create_input_dictionary_for_batch(batch, is_training, learningrate,
+                                                           self.config['bert_emb_dim'])
+        sys.exit()
+        if self.config["crf_on_top"] is True:
             cost, scores = self.session.run([self.loss, self.scores] + ([self.train_op] if is_training == True else []), feed_dict=feed_dict)[:2]
             predicted_labels = []
             predicted_probs = []
             for i in range(len(batch)):
                 sentence_length = len(batch[i])
-                viterbi_seq, viterbi_score, viterbi_trellis = self.viterbi_decode(scores[i], self.session.run(self.crf_transition_params))
+                viterbi_seq, viterbi_score, viterbi_trellis = self.viterbi_decode(scores[i],
+                                                                                  self.session.run(self.crf_transition_params))
                 predicted_labels.append(viterbi_seq[:sentence_length])
                 predicted_probs.append(viterbi_trellis[:sentence_length])
         else:
-            cost, predicted_labels_, predicted_probs_ = self.session.run([self.loss, self.predictions, self.probabilities] + ([self.train_op] if is_training == True else []), feed_dict=feed_dict)[:3]
+            cost, predicted_labels_, predicted_probs_ = self.session.run([self.loss, self.predictions,
+                                                                          self.probabilities] + ([self.train_op] if is_training == True else []),
+                                                                         feed_dict=feed_dict)[:3]
             predicted_labels = []
             predicted_probs = []
             for i in range(len(batch)):
