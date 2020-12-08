@@ -5,7 +5,7 @@ import numpy
 from tensorflow.python.framework import ops
 from tensorflow.python.ops import math_ops
 import sys
-from embedder import get_token_embeddings
+from embedder import get_token_embeddings, get_features
 
 try:
     import cPickle as pickle
@@ -345,7 +345,8 @@ class SequenceLabeler(object):
         singletons = self.singletons if is_training is True else None
         singletons_prob = self.config["singletons_prob"] if is_training is True else 0.0
         for i in range(len(batch)):
-            tokens_embeddings = get_token_embeddings(batch[i])
+            features = get_features(batch[i])
+            tokens_embeddings = get_token_embeddings(features)
             for j in range(len(batch[i])):
                 print(batch[i][j])
                 print(len(tokens_embeddings[batch[i][j]]))
