@@ -346,4 +346,4 @@ def get_features(input_text, dim=768):
 
 if __name__ == '__main__':
     text = ['Оставь надежду всяк сюда входящий.']
-    # print(get_features(text))
+    print(get_features(text))
