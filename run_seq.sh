@@ -11,9 +11,9 @@
 
 module load gcc/8.3.0 cuda/10.1.168
 
-export DIR=/projappl/project_2002016/sequence-labeler
+export DIR=/projappl/project_2002016
 cd $DIR
 
 conda activate transf
 
-srun python3 experiment.py ./conf/fcepublic.conf
+srun python3 ./sequence-labeler/experiment.py ./sequence-labeler/conf/fcepublic.conf
