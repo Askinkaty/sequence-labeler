@@ -373,3 +373,5 @@ if __name__ == '__main__':
     token_dict = get_token_embeddings(result)
     print(token_dict.keys())
     print(len(token_dict))
+    print(token_dict['сюда'].shape)
+    print(len(token_dict['сюда']))
