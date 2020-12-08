@@ -344,8 +344,32 @@ def get_features(input_text, dim=768):
     return output
 
 
+def get_token_embeddings(feature_dict):
+    result_dict = collections.OrderedDict()
+    token_piece = ''
+    for k, v in feature_dict.items():
+        if k == '[CLS]':
+            continue
+        if k == '[SEP]' and token_piece:
+            result_dict[token_piece] = v
+        else:
+            if not k.startswith('##'):
+                if token_piece:
+                    result_dict[token_piece] = v
+                token_piece = k
+                vector = v
+            else:
+                token_piece += k.replace('##', '')
+                vector = np.add(vector, k)
+    return result_dict
+
+
 if __name__ == '__main__':
     text = ['Оставь надежду всяк сюда входящий.']
     result = get_features(text)
+    print(len(text))
+    # dict_keys(['[CLS]', 'остав', '##ь', 'надежду', 'вся', '##к', 'сюда', 'входя', '##щи', '##и', '.', '[SEP]'])
     print(result.keys())
-    print(len(result))
+    token_dict = get_token_embeddings(result)
+    print(token_dict.keys())
+    print(len(token_dict))
