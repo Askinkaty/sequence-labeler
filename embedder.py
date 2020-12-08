@@ -11,6 +11,7 @@ from tensorflow.python.ops import math_ops
 
 
 import sys
+sys.path.append('bert/')
 
 import codecs
 import collections
