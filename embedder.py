@@ -1,3 +1,7 @@
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
 import collections
 import tensorflow as tf
 import re
@@ -7,12 +11,6 @@ from tensorflow.python.ops import math_ops
 
 
 import sys
-
-sys.path.append('bert/')
-
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
 
 import codecs
 import collections
