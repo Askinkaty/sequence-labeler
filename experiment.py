@@ -20,8 +20,10 @@ from embedder import get_features
 def filter_sentences(words):
     filtered = []
     for word in words:
-        new_word = word.replace('...', '.').replace('..', '.').replace('""""', '"').replace('"""', '"')
-        filtered.append(new_word)
+        word = word.replace('...', '.').replace('..', '.').replace('""""', '"').replace('"""', '"')
+        filtered.append(word)
+        if '-' in word: # here we split hyphenated tokens by hy
+            filtered.extend(word.split('-'))
     return filtered
 
 
