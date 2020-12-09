@@ -61,7 +61,7 @@ class SequenceLabeler(object):
         self.singletons = set([word for word in word_counter if word_counter[word] == 1])
 
         label_counter = collections.Counter()
-        for sentence in data_train: #this one only based on training data
+        for sentence in data_train:  # this one only based on training data
             for word in sentence:
                 label_counter[word[-1]] += 1
         self.label2id = collections.OrderedDict()
@@ -69,7 +69,7 @@ class SequenceLabeler(object):
             if label not in self.label2id:
                 self.label2id[label] = len(self.label2id)
 
-        if embedding_path != None and self.config["vocab_only_embedded"] == True:
+        if embedding_path is not None and self.config["vocab_only_embedded"] is True:
             self.embedding_vocab = set([self.UNK])
             with open(embedding_path, 'r') as f:
                 for line in f:
@@ -77,10 +77,10 @@ class SequenceLabeler(object):
                     if len(line_parts) <= 2:
                         continue
                     w = line_parts[0]
-                    if self.config["lowercase"] == True:
+                    if self.config["lowercase"] is True:
                         w = w.lower()
-                    if self.config["replace_digits"] == True:
-                        w = re.sub(r'\d', '0', w)
+                    if self.config["replace_digits"] is True:
+                        w = re.sub(r'\d', '0', w)  # ?
                     self.embedding_vocab.add(w)
             word2id_revised = collections.OrderedDict()
             for word in self.word2id:
@@ -93,9 +93,6 @@ class SequenceLabeler(object):
         print("n_labels: " + str(len(self.label2id)))
         print("n_singletons: " + str(len(self.singletons)))
 
-
-
-
     def construct_network(self):
         self.word_ids = tf.placeholder(tf.int32, [None, None], name="word_ids")
         self.char_ids = tf.placeholder(tf.int32, [None, None, None], name="char_ids")
@@ -104,8 +101,7 @@ class SequenceLabeler(object):
         self.label_ids = tf.placeholder(tf.int32, [None, None], name="label_ids")
         self.learningrate = tf.placeholder(tf.float32, name="learningrate")
         self.is_training = tf.placeholder(tf.int32, name="is_training")
-        self.context_emb = tf.placeholder(tf.float32, [None, None, None], name="context_emb")
-
+        self.context_emb = tf.placeholder(tf.float32, [None, None, None], name="context_emb") #  ???
         self.loss = 0.0
         input_tensor = None
         input_vector_size = 0
@@ -126,6 +122,7 @@ class SequenceLabeler(object):
             trainable=(True if self.config["train_embeddings"] == True else False))
         input_tensor = tf.nn.embedding_lookup(self.word_embeddings, self.word_ids)
         input_vector_size = self.config["word_embedding_size"]
+        input_tensor = tf.concat([input_tensor, self.context_emb], axis=2)
 
         if self.config["char_embedding_size"] > 0 and self.config["char_recurrent_size"] > 0:
             with tf.variable_scope("chars"), tf.control_dependencies([tf.assert_equal(tf.shape(self.char_ids)[2],
@@ -289,7 +286,6 @@ class SequenceLabeler(object):
             train_op = optimizer.minimize(loss)
         return train_op
 
-
     def preload_word_embeddings(self, embedding_path):
         loaded_embeddings = set()
         embedding_matrix = self.session.run(self.word_embeddings)
@@ -345,14 +341,10 @@ class SequenceLabeler(object):
         singletons = self.singletons if is_training is True else None
         singletons_prob = self.config["singletons_prob"] if is_training is True else 0.0
         for i in range(len(batch)):
-            print(batch[i])
             sentence = ' '.join([el[0] for el in batch[i]]).strip()
-            print(sentence)
             features = get_features([sentence])
             tokens_embeddings = get_token_embeddings(features)
             for j in range(len(batch[i])):
-                print(batch[i][j])
-                print(len(tokens_embeddings[batch[i][j][0].lower()]))
                 context_emb[i][j] = tokens_embeddings[batch[i][j][0].lower()]
                 word_ids[i][j] = self.translate2id(batch[i][j][0], self.word2id, self.UNK,
                                                    lowercase=self.config["lowercase"],
@@ -391,7 +383,6 @@ class SequenceLabeler(object):
     def process_batch(self, batch, is_training, learningrate):
         feed_dict = self.create_input_dictionary_for_batch(batch, is_training, learningrate,
                                                            self.config['bert_emb_dim'])
-        sys.exit()
         if self.config["crf_on_top"] is True:
             cost, scores = self.session.run([self.loss, self.scores] + ([self.train_op] if is_training == True else []), feed_dict=feed_dict)[:2]
             predicted_labels = []

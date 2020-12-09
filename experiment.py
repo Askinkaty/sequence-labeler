@@ -187,13 +187,13 @@ def run_experiment(config_path):
         labeler.build_vocabs(data_train, data_dev, data_test, config["preload_vectors"])
         labeler.construct_network()
         labeler.initialize_session()
-        if config["preload_vectors"] != None:
+        if config["preload_vectors"] is not None:
             labeler.preload_word_embeddings(config["preload_vectors"])
 
     print("parameter_count: " + str(labeler.get_parameter_count()))
     print("parameter_count_without_word_embeddings: " + str(labeler.get_parameter_count_without_word_embeddings()))
 
-    if data_train != None:
+    if data_train is not None:
         model_selector = config["model_selector"].split(":")[0]
         model_selector_type = config["model_selector"].split(":")[1]
         best_selector_value = 0.0
@@ -204,10 +204,12 @@ def run_experiment(config_path):
             print("current_learningrate: " + str(learningrate))
             random.shuffle(data_train)
 
-            results_train = process_sentences(data_train, labeler, is_training=True, learningrate=learningrate, config=config, name="train")
+            results_train = process_sentences(data_train, labeler, is_training=True, learningrate=learningrate,
+                                              config=config, name="train")
 
             if data_dev != None:
-                results_dev = process_sentences(data_dev, labeler, is_training=False, learningrate=0.0, config=config, name="dev")
+                results_dev = process_sentences(data_dev, labeler, is_training=False, learningrate=0.0,
+                                                config=config, name="dev")
 
                 if math.isnan(results_dev["dev_cost_sum"]) or math.isinf(results_dev["dev_cost_sum"]):
                     sys.stderr.write("ERROR: Cost is NaN or Inf. Exiting.\n")
