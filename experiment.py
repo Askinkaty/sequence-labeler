@@ -17,6 +17,14 @@ from evaluator import SequenceLabelingEvaluator
 from embedder import get_features
 
 
+def filter_sentences(words):
+    filtered = []
+    for word in words:
+        new_word = word.replace('...', '.').replace('..', '.').replace('""""', '"').replace('"""', '"')
+        filtered.append(new_word)
+    return filtered
+
+
 def read_input_files(file_paths, max_sentence_length=-1):
     """
     Reads input files in whitespace-separated format.
@@ -35,7 +43,8 @@ def read_input_files(file_paths, max_sentence_length=-1):
                     assert(len(line_parts) >= 2)
                     assert(len(line_parts) == line_length or line_length == None)
                     line_length = len(line_parts)
-                    sentence.append(line_parts)
+                    filtered = filter_sentences(line_parts)
+                    sentence.append(filtered)
                 elif len(line) == 0 and len(sentence) > 0:
                     if max_sentence_length <= 0 or len(sentence) <= max_sentence_length:
                         sentences.append(sentence)
@@ -44,8 +53,6 @@ def read_input_files(file_paths, max_sentence_length=-1):
                 if max_sentence_length <= 0 or len(sentence) <= max_sentence_length:
                     sentences.append(sentence)
     return sentences
-
-
 
 def parse_config(config_section, config_path):
     """
