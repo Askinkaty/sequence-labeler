@@ -366,6 +366,7 @@ def get_token_embeddings(feature_dict):
 
 if __name__ == '__main__':
     text = ['Оставь надежду всяк сюда входящий.']
+    text = ['Это открывает дорогу к заключению договора о """" брексите """" уже в конце недели .']
     result = get_features(text)
     print(len(text))
     # dict_keys(['[CLS]', 'остав', '##ь', 'надежду', 'вся', '##к', 'сюда', 'входя', '##щи', '##и', '.', '[SEP]'])
@@ -373,5 +374,5 @@ if __name__ == '__main__':
     token_dict = get_token_embeddings(result)
     print(token_dict.keys())
     print(len(token_dict))
-    print(token_dict['сюда'].shape)
-    print(len(token_dict['сюда']))
+    # print(token_dict['сюда'].shape)
+    # print(len(token_dict['сюда']))
