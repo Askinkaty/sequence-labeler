@@ -352,8 +352,8 @@ class SequenceLabeler(object):
             tokens_embeddings = get_token_embeddings(features)
             for j in range(len(batch[i])):
                 print(batch[i][j])
-                print(len(tokens_embeddings[batch[i][j]]))
-                context_emb[i][j] = tokens_embeddings[batch[i][j]]
+                print(len(tokens_embeddings[batch[i][j][0]]))
+                context_emb[i][j] = tokens_embeddings[batch[i][j][0]]
                 word_ids[i][j] = self.translate2id(batch[i][j][0], self.word2id, self.UNK,
                                                    lowercase=self.config["lowercase"],
                                                    replace_digits=self.config["replace_digits"],
