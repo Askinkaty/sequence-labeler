@@ -21,9 +21,10 @@ def filter_sentences(words):
     filtered = []
     for word in words:
         word = word.replace('...', '.').replace('..', '.').replace('""""', '"').replace('"""', '"')
-        filtered.append(word)
-        if '-' in word: # here we split hyphenated tokens by hy
+        if '-' in word:  # here we split hyphenated tokens by hyphen
             filtered.extend(word.split('-'))
+        else:
+            filtered.append(word)
     return filtered
 
 
