@@ -187,6 +187,8 @@ def convert_examples_to_features(examples, seq_length, tokenizer):
       if len(tokens_a) > seq_length - 2:
         tokens_a = tokens_a[0:(seq_length - 2)]
 
+    print(tokens_a)
+    print(tokens_b)
     # The convention in BERT is:
     # (a) For sequence pairs:
     #  tokens:   [CLS] is this jack ##son ##ville ? [SEP] no it is not . [SEP]
@@ -214,16 +216,18 @@ def convert_examples_to_features(examples, seq_length, tokenizer):
       input_type_ids.append(0)
     tokens.append("[SEP]")
     input_type_ids.append(0)
+    
+    #if tokens_b:
+    #  for token in tokens_b:
+    #    tokens.append(token)
+    #    input_type_ids.append(1)
+    #  tokens.append("[SEP]")
+    #  input_type_ids.append(1)
 
-    if tokens_b:
-      for token in tokens_b:
-        tokens.append(token)
-        input_type_ids.append(1)
-      tokens.append("[SEP]")
-      input_type_ids.append(1)
-
+    print('tokens: ', tokens)
     input_ids = tokenizer.convert_tokens_to_ids(tokens)
 
+    assert len(tokens) == len(input_ids)
     # The mask has 1 for real tokens and 0 for padding tokens. Only real
     # tokens are attended to.
     input_mask = [1] * len(input_ids)
@@ -335,12 +339,13 @@ def get_features(input_text, dim=768):
         output = collections.OrderedDict()
         for (i, token) in enumerate(feature.tokens):
             layers = []
+            print('TOKEN: ', token)
             for (j, layer_index) in enumerate(layer_indexes):
                 layer_output = result["layer_output_%d" % j]
                 layer_output_flat = np.array([x for x in layer_output[i:(i + 1)].flat])
                 layers.append(layer_output_flat)
             output[token] = sum(layers)[:dim]
-
+    print('keys ', output.keys())
     return output
 
 
@@ -367,6 +372,7 @@ def get_token_embeddings(feature_dict):
 if __name__ == '__main__':
     text = ['Оставь надежду всяк сюда входящий.']
     text = ['Как-то можно беззаботно идти.']
+    text = ['Равновесие тела зависит от точного контроля, осуществляемoй центральной нервной системой над мышцами и суставами бессознательно, но постоянно и динамично.']
     result = get_features(text)
     print(len(text))
     # dict_keys(['[CLS]', 'остав', '##ь', 'надежду', 'вся', '##к', 'сюда', 'входя', '##щи', '##и', '.', '[SEP]'])

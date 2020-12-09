@@ -101,7 +101,7 @@ class SequenceLabeler(object):
         self.label_ids = tf.placeholder(tf.int32, [None, None], name="label_ids")
         self.learningrate = tf.placeholder(tf.float32, name="learningrate")
         self.is_training = tf.placeholder(tf.int32, name="is_training")
-        self.context_emb = tf.placeholder(tf.float32, [None, None, None], name="context_emb") #  ???
+        self.context_emb = tf.placeholder(tf.float32, [None, None, self.config['bert_emb_dim']], name="context_emb") #  ???
         self.loss = 0.0
         input_tensor = None
         input_vector_size = 0
@@ -122,8 +122,10 @@ class SequenceLabeler(object):
             trainable=(True if self.config["train_embeddings"] == True else False))
         input_tensor = tf.nn.embedding_lookup(self.word_embeddings, self.word_ids)
         input_vector_size = self.config["word_embedding_size"]
+        print(input_tensor.get_shape())
         input_tensor = tf.concat([input_tensor, self.context_emb], axis=2)
-
+        print(input_tensor.get_shape())
+            
         if self.config["char_embedding_size"] > 0 and self.config["char_recurrent_size"] > 0:
             with tf.variable_scope("chars"), tf.control_dependencies([tf.assert_equal(tf.shape(self.char_ids)[2],
                                                                                       tf.reduce_max(self.word_lengths),
@@ -345,7 +347,12 @@ class SequenceLabeler(object):
             features = get_features([sentence])
             tokens_embeddings = get_token_embeddings(features)
             for j in range(len(batch[i])):
-                context_emb[i][j] = tokens_embeddings[batch[i][j][0].lower()]
+                try:
+                    context_emb[i][j] = tokens_embeddings[batch[i][j][0].lower()]
+                except:
+                    print(tokens_embeddings.keys())
+                    print(batch[i])
+                    sys.exit()
                 word_ids[i][j] = self.translate2id(batch[i][j][0], self.word2id, self.UNK,
                                                    lowercase=self.config["lowercase"],
                                                    replace_digits=self.config["replace_digits"],
