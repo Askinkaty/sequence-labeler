@@ -3,8 +3,8 @@
 #SBATCH --account=project_2002016
 #SBATCH --job-name=emb
 #SBATCH --partition=gpu
-#SBATCH --cpus-per-task=5
-#SBATCH --mem=15G
+#SBATCH --cpus-per-task=1
+#SBATCH --mem=10G
 #SBATCH --ntasks=1
 #SBATCH --time=48:00:00
 #SBATCH --gres=gpu:v100:1
