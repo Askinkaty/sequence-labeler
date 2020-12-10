@@ -346,7 +346,11 @@ class SequenceLabeler(object):
             sentence = ' '.join([el[0] for el in batch[i]]).strip()
             out_tokens, out_vertors = get_features([sentence])
             tokens, tokens_embeddings = get_token_embeddings(out_tokens, out_vertors)
-            assert len(tokens) == len(tokens_embeddings) == len(batch[i])
+            try:
+                assert len(tokens_embeddings) == len(batch[i])
+            except:
+                print(tokens)
+                print(batch[i])
             for j in range(len(batch[i])):
                 context_emb[i][j] = tokens_embeddings[j]
                 word_ids[i][j] = self.translate2id(batch[i][j][0], self.word2id, self.UNK,
