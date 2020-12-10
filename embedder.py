@@ -337,6 +337,8 @@ def get_features(input_text, dim=768):
         unique_id = int(result["unique_id"])
         feature = unique_id_to_feature[unique_id]
         output = collections.OrderedDict()
+        out_tokens = []
+        out_vectors = []
         for (i, token) in enumerate(feature.tokens):
             layers = []
             print('TOKEN: ', token)
@@ -344,41 +346,66 @@ def get_features(input_text, dim=768):
                 layer_output = result["layer_output_%d" % j]
                 layer_output_flat = np.array([x for x in layer_output[i:(i + 1)].flat])
                 layers.append(layer_output_flat)
-            output[token] = sum(layers)[:dim]
-    print('keys ', output.keys())
-    return output
+            out_tokens.append(token)
+            out_vectors.append(sum(layers)[:dim])
+            # output[token] = sum(layers)[:dim]
+    # print('keys ', output.keys())
+    return out_tokens, out_vectors
 
 
-def get_token_embeddings(feature_dict):
-    result_dict = collections.OrderedDict()
-    token_piece = ''
-    for k, v in feature_dict.items():
-        if k == '[CLS]':
+def get_token_embeddings(tokens, vectors):
+    out_tokens = []
+    out_vectors = []
+    for i, token in enumerate(tokens):
+        if token == '[CLS]':
             continue
-        if k == '[SEP]' and token_piece:
-            result_dict[token_piece] = v
+        if token == '[SEP]' and token_piece:
+            out_tokens.append(token_piece)
+            out_vectors.append(vector)
         else:
-            if not k.startswith('##'):
+            if not token.startswith('##'):
                 if token_piece:
-                    result_dict[token_piece] = v
-                token_piece = k
-                vector = v
+                    out_tokens.append(token_piece)
+                    out_vectors.append(vector)
+                token_piece = token
+                vector = vectors[i]
             else:
-                token_piece += k.replace('##', '')
-                vector = np.add(vector, v)
-    return result_dict
+                token_piece += token.replace('##', '')
+                vector = np.add(vector, vectors[i])
+    assert len(out_tokens) == len(out_vectors)
+    return out_tokens, out_vectors
+
+# def get_token_embeddings(feature_dict):
+#     result_dict = collections.OrderedDict()
+#     token_piece = ''
+#     for k, v in feature_dict.items():
+#         if k == '[CLS]':
+#             continue
+#         if k == '[SEP]' and token_piece:
+#             result_dict[token_piece] = v
+#         else:
+#             if not k.startswith('##'):
+#                 if token_piece:
+#                     result_dict[token_piece] = v
+#                 token_piece = k
+#                 vector = v
+#             else:
+#                 token_piece += k.replace('##', '')
+#                 vector = np.add(vector, v)
+#     return result_dict
 
 
 if __name__ == '__main__':
-    text = ['Оставь надежду всяк сюда входящий.']
-    text = ['Как-то можно беззаботно идти.']
+    # text = ['Оставь надежду всяк сюда входящий.']
+    # text = ['Как-то можно беззаботно идти.']
     text = ['Равновесие тела зависит от точного контроля, осуществляемoй центральной нервной системой над мышцами и суставами бессознательно, но постоянно и динамично.']
-    result = get_features(text)
+    out_tokens, out_vectors = get_features(text)
     print(len(text))
     # dict_keys(['[CLS]', 'остав', '##ь', 'надежду', 'вся', '##к', 'сюда', 'входя', '##щи', '##и', '.', '[SEP]'])
-    print(result.keys())
-    token_dict = get_token_embeddings(result)
-    print(token_dict.keys())
-    print(len(token_dict))
+    result_tokens, result_vectors = get_token_embeddings(out_tokens, out_vectors)
+    print(result_tokens[0])
+    print(len(result_vectors[0]))
+    # print(token_dict.keys())
+    # print(len(token_dict))
     # print(token_dict['сюда'].shape)
     # print(len(token_dict['сюда']))
