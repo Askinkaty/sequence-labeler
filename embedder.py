@@ -187,8 +187,7 @@ def convert_examples_to_features(examples, seq_length, tokenizer):
       if len(tokens_a) > seq_length - 2:
         tokens_a = tokens_a[0:(seq_length - 2)]
 
-    print(tokens_a)
-    print(tokens_b)
+
     # The convention in BERT is:
     # (a) For sequence pairs:
     #  tokens:   [CLS] is this jack ##son ##ville ? [SEP] no it is not . [SEP]
@@ -224,7 +223,6 @@ def convert_examples_to_features(examples, seq_length, tokenizer):
     #  tokens.append("[SEP]")
     #  input_type_ids.append(1)
 
-    print('tokens: ', tokens)
     input_ids = tokenizer.convert_tokens_to_ids(tokens)
 
     assert len(tokens) == len(input_ids)
@@ -336,12 +334,11 @@ def get_features(input_text, dim=768):
     for result in estimator.predict(input_fn, yield_single_examples=True):
         unique_id = int(result["unique_id"])
         feature = unique_id_to_feature[unique_id]
-        output = collections.OrderedDict()
+        # output = collections.OrderedDict()
         out_tokens = []
         out_vectors = []
         for (i, token) in enumerate(feature.tokens):
             layers = []
-            print('TOKEN: ', token)
             for (j, layer_index) in enumerate(layer_indexes):
                 layer_output = result["layer_output_%d" % j]
                 layer_output_flat = np.array([x for x in layer_output[i:(i + 1)].flat])
