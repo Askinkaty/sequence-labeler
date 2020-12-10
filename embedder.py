@@ -356,6 +356,7 @@ def get_features(input_text, dim=768):
 def get_token_embeddings(tokens, vectors):
     out_tokens = []
     out_vectors = []
+    token_piece = ''
     for i, token in enumerate(tokens):
         if token == '[CLS]':
             continue
