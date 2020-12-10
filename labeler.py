@@ -344,15 +344,11 @@ class SequenceLabeler(object):
         singletons_prob = self.config["singletons_prob"] if is_training is True else 0.0
         for i in range(len(batch)):
             sentence = ' '.join([el[0] for el in batch[i]]).strip()
-            features = get_features([sentence])
-            tokens_embeddings = get_token_embeddings(features)
+            out_tokens, out_vertors = get_features([sentence])
+            tokens, tokens_embeddings = get_token_embeddings(out_tokens, out_vertors)
+            assert len(tokens) == len(tokens_embeddings) == len(batch[i])
             for j in range(len(batch[i])):
-                try:
-                    context_emb[i][j] = tokens_embeddings[batch[i][j][0].lower()]
-                except:
-                    print(tokens_embeddings.keys())
-                    print(batch[i])
-                    sys.exit()
+                context_emb[i][j] = tokens_embeddings[j]
                 word_ids[i][j] = self.translate2id(batch[i][j][0], self.word2id, self.UNK,
                                                    lowercase=self.config["lowercase"],
                                                    replace_digits=self.config["replace_digits"],

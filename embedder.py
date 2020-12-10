@@ -376,25 +376,6 @@ def get_token_embeddings(tokens, vectors):
     assert len(out_tokens) == len(out_vectors)
     return out_tokens, out_vectors
 
-# def get_token_embeddings(feature_dict):
-#     result_dict = collections.OrderedDict()
-#     token_piece = ''
-#     for k, v in feature_dict.items():
-#         if k == '[CLS]':
-#             continue
-#         if k == '[SEP]' and token_piece:
-#             result_dict[token_piece] = v
-#         else:
-#             if not k.startswith('##'):
-#                 if token_piece:
-#                     result_dict[token_piece] = v
-#                 token_piece = k
-#                 vector = v
-#             else:
-#                 token_piece += k.replace('##', '')
-#                 vector = np.add(vector, v)
-#     return result_dict
-
 
 if __name__ == '__main__':
     # text = ['Оставь надежду всяк сюда входящий.']
@@ -402,11 +383,6 @@ if __name__ == '__main__':
     text = ['Равновесие тела зависит от точного контроля, осуществляемoй центральной нервной системой над мышцами и суставами бессознательно, но постоянно и динамично.']
     out_tokens, out_vectors = get_features(text)
     print(len(text))
-    # dict_keys(['[CLS]', 'остав', '##ь', 'надежду', 'вся', '##к', 'сюда', 'входя', '##щи', '##и', '.', '[SEP]'])
     result_tokens, result_vectors = get_token_embeddings(out_tokens, out_vectors)
     print(result_tokens[0])
     print(len(result_vectors[0]))
-    # print(token_dict.keys())
-    # print(len(token_dict))
-    # print(token_dict['сюда'].shape)
-    # print(len(token_dict['сюда']))
