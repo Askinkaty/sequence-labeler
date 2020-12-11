@@ -156,6 +156,7 @@ def process_sentences(data, labeler, is_training, learningrate, config, name):
     """
     Process all the sentences with the labeler, return evaluation metrics.
     """
+    print(labeler.label2id)
     evaluator = SequenceLabelingEvaluator(config["main_label"], labeler.label2id, config["conll_eval"])
     batches_of_sentence_ids = create_batches_of_sentence_ids(data, config["batch_equal_size"], config["max_batch_size"])
     if is_training is True:
