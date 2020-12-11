@@ -5,7 +5,7 @@ import random
 import math
 import os
 import gc
-
+import codecs
 try:
     import ConfigParser as configparser
 except:
@@ -45,7 +45,7 @@ def read_input_files(file_paths, max_sentence_length=-1):
     sentences = []
     line_length = None
     for file_path in file_paths.strip().split(","):
-        with open(file_path, "r") as f:
+        with codecs.open(file_path, "r", encoding='utf-8') as f:
             sentence = []
             for line in f:
                 line = line.strip()
