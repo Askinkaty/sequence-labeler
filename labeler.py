@@ -65,6 +65,8 @@ class SequenceLabeler(object):
             for word in sentence:
                 label_counter[word[-1]] += 1
         self.label2id = collections.OrderedDict()
+        print(label_counter)
+        print(label_counter.most_common())
         for label, count in label_counter.most_common():
             if label not in self.label2id:
                 self.label2id[label] = len(self.label2id)
