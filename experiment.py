@@ -17,17 +17,22 @@ from evaluator import SequenceLabelingEvaluator
 from embedder import get_features
 
 
-def filter_sentences(words):
-    filtered = []
-    for word in words:
-        if len(word):
-            word = word.replace('...', '.').replace('..', '.').replace('""""', '"').replace('"""', '"')
-            if '-' in word and len(word) > 1:  # here we split hyphenated tokens by hyphen
-                filtered.extend([el.strip() for el in word.split('-')])
-            else:
-                if len(word):
-                    filtered.append(word)
-    return filtered
+def filter_sentences(line_parts):
+    # input format ['последний', 'c']
+    result = []
+    word = line_parts[0]
+    label = line_parts[1]
+    if len(word):
+        word = word.replace('...', '.').replace('..', '.').replace('""""', '"').replace('"""', '"')
+        if '-' in word and len(word) > 1:  # here we split hyphenated tokens by hyphen
+            word_list = word.split('-')  #  hyphen can get incorrect label as well here
+            for el in word_list:
+                result.append([el.strip(), label])
+        else:
+            if len(word):
+                filtered_ = [word, label]
+                result.append(filtered_)
+    return result
 
 
 def read_input_files(file_paths, max_sentence_length=-1):
@@ -45,13 +50,16 @@ def read_input_files(file_paths, max_sentence_length=-1):
                 line = line.strip()
                 if len(line) > 0:
                     line_parts = line.split()
-                    print(line_parts)
-                    assert(len(line_parts) >= 2)
+                    try:
+                        assert(len(line_parts) >= 2)
+                    except:
+                        print(line_parts)
                     assert(len(line_parts) == line_length or line_length == None)
                     line_parts = [el for el in line_parts if len(el)]
                     line_length = len(line_parts)
-                    filtered = filter_sentences(line_parts)
-                    sentence.append(filtered)
+                    filtered_parts = filter_sentences(line_parts)
+                    for fp in filtered_parts:
+                        sentence.append(fp)
                 elif len(line) == 0 and len(sentence) > 0:
                     if max_sentence_length <= 0 or len(sentence) <= max_sentence_length:
                         sentences.append(sentence)
