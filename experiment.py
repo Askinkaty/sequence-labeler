@@ -24,7 +24,8 @@ def filter_sentences(words):
         if '-' in word:  # here we split hyphenated tokens by hyphen
             filtered.extend(word.split('-'))
         else:
-            filtered.append(word)
+            if len(word):
+                filtered.append(word)
     return filtered
 
 
