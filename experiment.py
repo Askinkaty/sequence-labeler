@@ -20,12 +20,13 @@ from embedder import get_features
 def filter_sentences(words):
     filtered = []
     for word in words:
-        word = word.replace('...', '.').replace('..', '.').replace('""""', '"').replace('"""', '"')
-        if '-' in word:  # here we split hyphenated tokens by hyphen
-            filtered.extend(word.split('-'))
-        else:
-            if len(word):
-                filtered.append(word)
+        if len(word):
+            word = word.replace('...', '.').replace('..', '.').replace('""""', '"').replace('"""', '"')
+            if '-' in word:  # here we split hyphenated tokens by hyphen
+                filtered.extend(word.split('-').strip())
+            else:
+                if len(word):
+                    filtered.append(word)
     return filtered
 
 
