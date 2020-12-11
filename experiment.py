@@ -47,7 +47,10 @@ def read_input_files(file_paths, max_sentence_length=-1):
                     line_parts = line.split()
                     assert(len(line_parts) >= 2)
                     assert(len(line_parts) == line_length or line_length == None)
+                    line_parts = [el for el in line_parts if len(el)]
                     line_length = len(line_parts)
+                    if 'азартного' in line_parts:
+                        print(line_parts)
                     filtered = filter_sentences(line_parts)
                     sentence.append(filtered)
                 elif len(line) == 0 and len(sentence) > 0:
