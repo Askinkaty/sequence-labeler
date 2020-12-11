@@ -55,10 +55,13 @@ def read_input_files(file_paths, max_sentence_length=-1):
                         assert(len(line_parts) >= 2)
                     except:
                         print(line_parts)
-                    assert(len(line_parts) == line_length or line_length == None)
+                    try:
+                        assert(len(line_parts) == line_length or line_length == None)
+                    except:
+                        print(line_parts, line_length)
                     line_parts = [el for el in line_parts if len(el)]
-                    line_length = len(line_parts)
                     filtered_parts = filter_sentences(line_parts)
+                    line_length = len(line_parts)
                     for fp in filtered_parts:
                         sentence.append(fp)
                 elif len(line) == 0 and len(sentence) > 0:
