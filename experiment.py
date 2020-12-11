@@ -60,8 +60,8 @@ def read_input_files(file_paths, max_sentence_length=-1):
                     except:
                         print(line_parts, line_length)
                     line_parts = [el for el in line_parts if len(el)]
-                    filtered_parts = filter_sentences(line_parts)
                     line_length = len(line_parts)
+                    filtered_parts = filter_sentences(line_parts)
                     for fp in filtered_parts:
                         sentence.append(fp)
                 elif len(line) == 0 and len(sentence) > 0:
