@@ -45,6 +45,7 @@ def read_input_files(file_paths, max_sentence_length=-1):
                 line = line.strip()
                 if len(line) > 0:
                     line_parts = line.split()
+                    print(line_parts)
                     assert(len(line_parts) >= 2)
                     assert(len(line_parts) == line_length or line_length == None)
                     line_parts = [el for el in line_parts if len(el)]
