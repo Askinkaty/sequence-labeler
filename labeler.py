@@ -349,6 +349,7 @@ class SequenceLabeler(object):
             try:
                 assert len(tokens_embeddings) == len(batch[i])
             except:
+                print(out_tokens)
                 print(tokens)
                 print(batch[i])
             for j in range(len(batch[i])):
