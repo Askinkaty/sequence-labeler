@@ -24,15 +24,17 @@ def filter_sentences(line_parts):
     label = line_parts[1]
     if len(word):
         word = word.replace('...', '.').replace('..', '.').replace('""""', '"').replace('"""', '"').replace('\xad', '')
-        word = word.replace('_', '')
-        if '-' in word and len(word) > 1:  # here we split hyphenated tokens by hyphen
-            word_list = word.split('-')  #  hyphen can get incorrect label as well here
-            for el in word_list:
-                result.append([el.strip(), label])
-        else:
+        word = word.replace('_', '').replace('')
+        if '-' in word and len(word) > 1 and not word.endswith('-') and not word.startswith('-'):  # here we split hyphenated tokens by hyphen
+            word_list = word.split('-') #  hyphen can get incorrect label as well here
+            if len(word_list) == 3:
+                for el in word_list:
+                    result.append([el.strip(), label])
+        elif word.endswith('-') or word.startswith('-'):
+            word = word.replace('-', '')
             if len(word):
-                filtered_ = [word, label]
-                result.append(filtered_)
+                filtered = [word, label]
+                result.append(filtered)
     return result
 
 
