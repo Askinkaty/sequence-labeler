@@ -23,7 +23,7 @@ def filter_sentences(words):
         if len(word):
             word = word.replace('...', '.').replace('..', '.').replace('""""', '"').replace('"""', '"')
             if '-' in word:  # here we split hyphenated tokens by hyphen
-                filtered.extend(word.split('-').strip())
+                filtered.extend([el.strip() for el in word.split('-')])
             else:
                 if len(word):
                     filtered.append(word)
