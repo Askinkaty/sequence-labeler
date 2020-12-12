@@ -31,7 +31,7 @@ def filter_sentences(line_parts):
                 result.append([word_list[0].strip(), label])
                 result.append(['-', label])
                 result.append([word_list[1].strip(), label])
-        elif word.endswith('-') or word.startswith('-'):
+        elif len(word) > 1 and word.endswith('-') or word.startswith('-'):
             word = word.replace('-', '')
             result.append([word, label])
         else:
