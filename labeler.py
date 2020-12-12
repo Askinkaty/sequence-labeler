@@ -28,6 +28,7 @@ class SequenceLabeler(object):
 
     def build_vocabs(self, data_train, data_dev, data_test, embedding_path=None):
         data_source = list(data_train)
+
         if self.config["vocab_include_devtest"]:
             if data_dev != None:
                 data_source += data_dev
@@ -65,8 +66,6 @@ class SequenceLabeler(object):
             for word in sentence:
                 label_counter[word[-1]] += 1
         self.label2id = collections.OrderedDict()
-        print(label_counter)
-        print(label_counter.most_common())
         for label, count in label_counter.most_common():
             if label not in self.label2id:
                 self.label2id[label] = len(self.label2id)
