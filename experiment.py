@@ -27,9 +27,10 @@ def filter_sentences(line_parts):
         word = word.replace('_', '')
         if '-' in word and len(word) > 1 and not word.endswith('-') and not word.startswith('-'):  # here we split hyphenated tokens by hyphen
             word_list = word.split('-') #  hyphen can get incorrect label as well here
-            if len(word_list) == 3:
-                for el in word_list:
-                    result.append([el.strip(), label])
+            if len(word_list) == 2:
+                result.append([word_list[0].strip(), label])
+                result.append(['-', label])
+                result.append([word_list[1].strip(), label])
         elif word.endswith('-') or word.startswith('-'):
             word = word.replace('-', '')
         if len(word):
