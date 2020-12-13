@@ -1,0 +1,10 @@
+test0_main_predicted_count: 214
+test0_main_total_count: 456
+test0_main_correct_count: 142
+test0_p: 0.6635514018691588
+test0_r: 0.31140350877192985
+test0_f: 0.4238805970149254
+test0_f05: 0.5411585365853658
+test0_accuracy: 0.9680410664017222
+test0_token_count: 12078
+test0_time: 4.852942705154419
