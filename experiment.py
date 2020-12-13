@@ -189,6 +189,7 @@ def get_and_save_bert_embeddings(sentences, out_path, model, mode):
     with codecs.open(os.path.join(out_path, out_file), 'w', encoding='utf-8') as f:
         for i, sentence in enumerate(sentences):
             if len(sent_batch) < n and i < len(sentences):
+                sentence = ' '.join([el[0] for el in sentence]).strip()
                 sent_batch.append(sentence)
             elif len(sent_batch) == n or i == len(sentences):
                 out_tokens, out_vertors = model.get_features(sent_batch)
