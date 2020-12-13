@@ -466,12 +466,13 @@ def filter_sentences(line_parts):
 if __name__ == '__main__':
     # text = ['Оставь надежду всяк сюда входящий.']
     # text = ['Как-то можно беззаботно идти.']
-    file_path = '/home/katinska/seq_data/train.tsv'
+    file_path = '/projappl/project_2002016/seq_data/train.tsv'
     sentences = []
     with codecs.open(file_path, "r", encoding='utf-8') as f:
         sentence = []
         for line in f:
             line = line.strip()
+            line_length = None
             if len(line) > 0:
                 line_parts = line.split()
                 try:
@@ -479,7 +480,7 @@ if __name__ == '__main__':
                 except:
                     print(line_parts)
                 try:
-                    assert (len(line_parts) == line_length or line_length == None)
+                    assert (len(line_parts) == line_length or line_length is None)
                 except:
                     print(line_parts, line_length)
                 line_parts = [el for el in line_parts if len(el)]
@@ -488,10 +489,10 @@ if __name__ == '__main__':
                 for fp in filtered_parts:
                     sentence.append(fp)
             elif len(line) == 0 and len(sentence) > 0:
-                sentences.append(' '.joint(sentence))
+                sentences.append(' '.join([w[0] for w in sentence]))
                 sentence = []
         if len(sentence) > 0:
-            sentences.append(' '.joint(sentence))
+            sentences.append(' '.join([w[0] for w in sentence]))
 
     # text = ['Равновесие тела зависит от точного контроля, осуществляемoй центральной нервной системой над мышцами и суставами бессознательно, но постоянно и динамично.']
     model = Model()
