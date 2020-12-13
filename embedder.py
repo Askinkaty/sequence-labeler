@@ -466,7 +466,7 @@ def filter_sentences(line_parts):
 if __name__ == '__main__':
     # text = ['Оставь надежду всяк сюда входящий.']
     # text = ['Как-то можно беззаботно идти.']
-    file_path = '/projappl/project_2002016/seq_data/train.tsv'
+    file_path = '/scratch/project_2002016/seq_data/train.tsv'
     sentences = []
     with codecs.open(file_path, "r", encoding='utf-8') as f:
         sentence = []
