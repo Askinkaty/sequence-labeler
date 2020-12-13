@@ -14,7 +14,7 @@ except:
 
 from labeler import SequenceLabeler
 from evaluator import SequenceLabelingEvaluator
-from embedder import get_features
+from embedder import Model
 
 
 def filter_sentences(line_parts):
@@ -154,7 +154,7 @@ def create_batches_of_sentence_ids(sentences, batch_equal_size, max_batch_size):
 
 
 
-def process_sentences(data, labeler, is_training, learningrate, config, name):
+def process_sentences(data, labeler, bertModel, is_training, learningrate, config, name):
     """
     Process all the sentences with the labeler, return evaluation metrics.
     """
@@ -164,7 +164,8 @@ def process_sentences(data, labeler, is_training, learningrate, config, name):
         random.shuffle(batches_of_sentence_ids)
     for sentence_ids_in_batch in batches_of_sentence_ids:
         batch = [data[i] for i in sentence_ids_in_batch]
-        cost, predicted_labels, predicted_probs = labeler.process_batch(batch, is_training, learningrate)
+        cost, predicted_labels, predicted_probs = labeler.process_batch(batch, is_training,
+                                                                        learningrate, bertModel)
 
         evaluator.append_data(cost, batch, predicted_labels)
 
@@ -213,6 +214,9 @@ def run_experiment(config_path):
     print("parameter_count: " + str(labeler.get_parameter_count()))
     print("parameter_count_without_word_embeddings: " + str(labeler.get_parameter_count_without_word_embeddings()))
 
+    bertModel = Model()
+    print("Initializing BERT model for contextual embeddings... ")
+
     if data_train is not None:
         model_selector = config["model_selector"].split(":")[0]
         model_selector_type = config["model_selector"].split(":")[1]
@@ -224,11 +228,13 @@ def run_experiment(config_path):
             print("current_learningrate: " + str(learningrate))
             random.shuffle(data_train)
 
-            results_train = process_sentences(data_train, labeler, is_training=True, learningrate=learningrate,
+            results_train = process_sentences(data_train, labeler, bertModel, is_training=True,
+                                              learningrate=learningrate,
                                               config=config, name="train")
 
             if data_dev != None:
-                results_dev = process_sentences(data_dev, labeler, is_training=False, learningrate=0.0,
+                results_dev = process_sentences(data_dev, labeler, bertModel, is_training=False,
+                                                learningrate=0.0,
                                                 config=config, name="dev")
 
                 if math.isnan(results_dev["dev_cost_sum"]) or math.isinf(results_dev["dev_cost_sum"]):
@@ -267,7 +273,8 @@ def run_experiment(config_path):
         i = 0
         for path_test in config["path_test"].strip().split(":"):
             data_test = read_input_files(path_test)
-            results_test = process_sentences(data_test, labeler, is_training=False, learningrate=0.0, config=config, name="test"+str(i))
+            results_test = process_sentences(data_test, labeler, bertModel, is_training=False,
+                                             learningrate=0.0, config=config, name="test"+str(i))
             i += 1
 
 

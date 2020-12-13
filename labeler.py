@@ -5,7 +5,7 @@ import numpy
 from tensorflow.python.framework import ops
 from tensorflow.python.ops import math_ops
 import sys
-from embedder import get_token_embeddings, get_features
+from embedder import get_token_embeddings
 
 try:
     import cPickle as pickle
@@ -24,6 +24,7 @@ class SequenceLabeler(object):
         self.char2id = None
         self.label2id = None
         self.singletons = None
+        self.bertModel = None
 
 
     def build_vocabs(self, data_train, data_dev, data_test, embedding_path=None):
@@ -328,7 +329,8 @@ class SequenceLabeler(object):
             raise ValueError("Unable to handle value, no UNK token: " + str(token))
         return token_id
 
-    def create_input_dictionary_for_batch(self, batch, is_training, learningrate, bert_emb_dim=None):
+    def create_input_dictionary_for_batch(self, batch, is_training, learningrate, bertModel,
+                                          bert_emb_dim=None):
         sentence_lengths = numpy.array([len(sentence) for sentence in batch])
         max_sentence_length = sentence_lengths.max()
         max_word_length = numpy.array([numpy.array([len(word[0]) for word in sentence]).max() for sentence in batch]).max()
@@ -345,7 +347,7 @@ class SequenceLabeler(object):
         singletons_prob = self.config["singletons_prob"] if is_training is True else 0.0
         for i in range(len(batch)):
             sentence = ' '.join([el[0] for el in batch[i]]).strip()
-            out_tokens, out_vertors = get_features([sentence])
+            out_tokens, out_vertors = bertModel.get_features([sentence])
             tokens, tokens_embeddings = get_token_embeddings(out_tokens, out_vertors)
             try:
                 assert len(tokens_embeddings) == len(batch[i])
@@ -389,8 +391,9 @@ class SequenceLabeler(object):
         viterbi_score = numpy.max(trellis[-1])
         return viterbi, viterbi_score, trellis
 
-    def process_batch(self, batch, is_training, learningrate):
+    def process_batch(self, batch, is_training, learningrate, bertModel):
         feed_dict = self.create_input_dictionary_for_batch(batch, is_training, learningrate,
+                                                           bertModel,
                                                            self.config['bert_emb_dim'])
         if self.config["crf_on_top"] is True:
             cost, scores = self.session.run([self.loss, self.scores] + ([self.train_op] if is_training == True else []), feed_dict=feed_dict)[:2]

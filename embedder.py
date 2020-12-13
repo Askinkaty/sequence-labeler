@@ -38,6 +38,11 @@ INIT_CHECKPOINT = BERT_PRETRAINED_DIR + '/bert_model.ckpt'
 BATCH_SIZE = 128
 
 
+
+
+
+
+
 class InputExample(object):
 
   def __init__(self, unique_id, text_a, text_b=None):
@@ -287,67 +292,126 @@ def read_sequence(input_sentences):
     return examples
 
 
-def get_features(input_text, dim=768):
-    #   tf.logging.set_verbosity(tf.logging.INFO)
+class Model:
+    def __init__(self):
+        self.dim = 768
+        self.layer_indexes = LAYERS
+        self.bert_config = modeling.BertConfig.from_json_file(BERT_CONFIG)
 
-    layer_indexes = LAYERS
-    bert_config = modeling.BertConfig.from_json_file(BERT_CONFIG)
+        self.tokenizer = tokenization.FullTokenizer(
+            vocab_file=VOCAB_FILE, do_lower_case=True)
 
-    tokenizer = tokenization.FullTokenizer(
-        vocab_file=VOCAB_FILE, do_lower_case=True)
+        self.is_per_host = tf.contrib.tpu.InputPipelineConfig.PER_HOST_V2
+        self.run_config = tf.contrib.tpu.RunConfig(
+            tpu_config=tf.contrib.tpu.TPUConfig(
+                num_shards=NUM_TPU_CORES,
+                per_host_input_for_training=self.is_per_host))
 
-    is_per_host = tf.contrib.tpu.InputPipelineConfig.PER_HOST_V2
-    run_config = tf.contrib.tpu.RunConfig(
-        tpu_config=tf.contrib.tpu.TPUConfig(
-            num_shards=NUM_TPU_CORES,
-            per_host_input_for_training=is_per_host))
+        self.model_fn = model_fn_builder(
+            use_tpu=False,
+            bert_config=self.bert_config,
+            init_checkpoint=INIT_CHECKPOINT,
+            layer_indexes=self.layer_indexes,
+            use_one_hot_embeddings=True)
 
-    examples = read_sequence(input_text)
+        # If TPU is not available, this will fall back to normal Estimator on CPU
+        # or GPU.
+        self.estimator = tf.contrib.tpu.TPUEstimator(
+            use_tpu=False,
+            model_fn=self.model_fn,
+            config=self.run_config,
+            predict_batch_size=BATCH_SIZE,
+            train_batch_size=BATCH_SIZE)
 
-    features = convert_examples_to_features(
-        examples=examples, seq_length=MAX_SEQ_LENGTH, tokenizer=tokenizer)
+    def get_features(self, input_text):
+        examples = read_sequence(input_text)
+        features = convert_examples_to_features(
+            examples=examples, seq_length=MAX_SEQ_LENGTH, tokenizer=self.tokenizer)
 
-    unique_id_to_feature = {}
-    for feature in features:
-        unique_id_to_feature[feature.unique_id] = feature
+        unique_id_to_feature = {}
+        for feature in features:
+            unique_id_to_feature[feature.unique_id] = feature
 
-    model_fn = model_fn_builder(
-        use_tpu=False,
-        bert_config=bert_config,
-        init_checkpoint=INIT_CHECKPOINT,
-        layer_indexes=layer_indexes,
-        use_one_hot_embeddings=True)
+        input_fn = input_fn_builder(
+            features=features, seq_length=MAX_SEQ_LENGTH)
+        for result in self.estimator.predict(input_fn, yield_single_examples=True):
+            unique_id = int(result["unique_id"])
+            feature = unique_id_to_feature[unique_id]
+            out_tokens = []
+            out_vectors = []
+            for (i, token) in enumerate(feature.tokens):
+                layers = []
+                for (j, layer_index) in enumerate(self.layer_indexes):
+                    layer_output = result["layer_output_%d" % j]
+                    layer_output_flat = np.array([x for x in layer_output[i:(i + 1)].flat])
+                    layers.append(layer_output_flat)
+                out_tokens.append(token)
+                out_vectors.append(sum(layers)[:self.dim])
+        return out_tokens, out_vectors
 
-    # If TPU is not available, this will fall back to normal Estimator on CPU
-    # or GPU.
-    estimator = tf.contrib.tpu.TPUEstimator(
-        use_tpu=False,
-        model_fn=model_fn,
-        config=run_config,
-        predict_batch_size=BATCH_SIZE,
-        train_batch_size=BATCH_SIZE)
 
-    input_fn = input_fn_builder(
-        features=features, seq_length=MAX_SEQ_LENGTH)
 
-    # Get features
-    for result in estimator.predict(input_fn, yield_single_examples=True):
-        unique_id = int(result["unique_id"])
-        feature = unique_id_to_feature[unique_id]
-        # output = collections.OrderedDict()
-        out_tokens = []
-        out_vectors = []
-        for (i, token) in enumerate(feature.tokens):
-            layers = []
-            for (j, layer_index) in enumerate(layer_indexes):
-                layer_output = result["layer_output_%d" % j]
-                layer_output_flat = np.array([x for x in layer_output[i:(i + 1)].flat])
-                layers.append(layer_output_flat)
-            out_tokens.append(token)
-            out_vectors.append(sum(layers)[:dim])
-            # output[token] = sum(layers)[:dim]
-    # print('keys ', output.keys())
-    return out_tokens, out_vectors
+# def get_features(input_text, dim=768):
+#       tf.logging.set_verbosity(tf.logging.INFO)
+#
+#     layer_indexes = LAYERS
+#     bert_config = modeling.BertConfig.from_json_file(BERT_CONFIG)
+#
+#     tokenizer = tokenization.FullTokenizer(
+#         vocab_file=VOCAB_FILE, do_lower_case=True)
+#
+#     is_per_host = tf.contrib.tpu.InputPipelineConfig.PER_HOST_V2
+#     run_config = tf.contrib.tpu.RunConfig(
+#         tpu_config=tf.contrib.tpu.TPUConfig(
+#             num_shards=NUM_TPU_CORES,
+#             per_host_input_for_training=is_per_host))
+#
+#     examples = read_sequence(input_text)
+#
+#     features = convert_examples_to_features(
+#         examples=examples, seq_length=MAX_SEQ_LENGTH, tokenizer=tokenizer)
+#
+#     unique_id_to_feature = {}
+#     for feature in features:
+#         unique_id_to_feature[feature.unique_id] = feature
+#
+#     model_fn = model_fn_builder(
+#         use_tpu=False,
+#         bert_config=bert_config,
+#         init_checkpoint=INIT_CHECKPOINT,
+#         layer_indexes=layer_indexes,
+#         use_one_hot_embeddings=True)
+#
+#     # If TPU is not available, this will fall back to normal Estimator on CPU
+#     # or GPU.
+#     estimator = tf.contrib.tpu.TPUEstimator(
+#         use_tpu=False,
+#         model_fn=model_fn,
+#         config=run_config,
+#         predict_batch_size=BATCH_SIZE,
+#         train_batch_size=BATCH_SIZE)
+#
+#     input_fn = input_fn_builder(
+#         features=features, seq_length=MAX_SEQ_LENGTH)
+#
+#     # Get features
+#     for result in estimator.predict(input_fn, yield_single_examples=True):
+#         unique_id = int(result["unique_id"])
+#         feature = unique_id_to_feature[unique_id]
+#         # output = collections.OrderedDict()
+#         out_tokens = []
+#         out_vectors = []
+#         for (i, token) in enumerate(feature.tokens):
+#             layers = []
+#             for (j, layer_index) in enumerate(layer_indexes):
+#                 layer_output = result["layer_output_%d" % j]
+#                 layer_output_flat = np.array([x for x in layer_output[i:(i + 1)].flat])
+#                 layers.append(layer_output_flat)
+#             out_tokens.append(token)
+#             out_vectors.append(sum(layers)[:dim])
+#             # output[token] = sum(layers)[:dim]
+#     # print('keys ', output.keys())
+#     return out_tokens, out_vectors
 
 
 def get_token_embeddings(tokens, vectors):
@@ -378,7 +442,8 @@ if __name__ == '__main__':
     # text = ['Оставь надежду всяк сюда входящий.']
     # text = ['Как-то можно беззаботно идти.']
     text = ['Равновесие тела зависит от точного контроля, осуществляемoй центральной нервной системой над мышцами и суставами бессознательно, но постоянно и динамично.']
-    out_tokens, out_vectors = get_features(text)
+    model = Model()
+    out_tokens, out_vectors = model.get_features(text)
     print(len(text))
     result_tokens, result_vectors = get_token_embeddings(out_tokens, out_vectors)
     print(result_tokens[0])
