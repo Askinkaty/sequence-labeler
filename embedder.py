@@ -420,10 +420,12 @@ def get_token_embeddings(tokens, vectors):
     out_tokens = []
     out_vectors = []
     token_piece = ''
+    print(tokens)
     for i, token in enumerate(tokens):
         if token == '[CLS]':
             continue
         if token == '[SEP]' and token_piece:
+            print('Separator')
             out_tokens.append(token_piece)
             out_vectors.append(vector)
             out_seq.append(out_tokens)
@@ -441,6 +443,7 @@ def get_token_embeddings(tokens, vectors):
                 token_piece += token.replace('##', '')
                 vector = np.add(vector, vectors[i])
     assert len(out_tokens) == len(out_vectors)
+    assert len(out_seq) == len(out_seq_vectors)
     # return out_tokens, out_vectors
     return out_seq, out_seq_vectors
 
