@@ -415,6 +415,8 @@ class Model:
 
 
 def get_token_embeddings(tokens, vectors):
+    out_seq = []
+    out_seq_vectors = []
     out_tokens = []
     out_vectors = []
     token_piece = ''
@@ -424,6 +426,10 @@ def get_token_embeddings(tokens, vectors):
         if token == '[SEP]' and token_piece:
             out_tokens.append(token_piece)
             out_vectors.append(vector)
+            out_seq.append(out_tokens)
+            out_seq_vectors.append(out_vectors)
+            out_tokens = []
+            out_vectors = []
         else:
             if not token.startswith('##'):
                 if token_piece:
@@ -435,9 +441,8 @@ def get_token_embeddings(tokens, vectors):
                 token_piece += token.replace('##', '')
                 vector = np.add(vector, vectors[i])
     assert len(out_tokens) == len(out_vectors)
-    return out_tokens, out_vectors
-
-
+    # return out_tokens, out_vectors
+    return out_seq, out_seq_vectors
 
 
 def filter_sentences(line_parts):
@@ -496,9 +501,10 @@ if __name__ == '__main__':
 
     # text = ['Равновесие тела зависит от точного контроля, осуществляемoй центральной нервной системой над мышцами и суставами бессознательно, но постоянно и динамично.']
     model = Model()
-    out_tokens, out_vectors = model.get_features(sentences)
+    out_tokens, out_vectors = model.get_features(sentences[:33])
     print(len(sentences))
-    print(out_tokens[:100])
-    # result_tokens, result_vectors = get_token_embeddings(out_tokens, out_vectors)
+    # print(out_tokens[:100])
+    result_tokens, result_vectors = get_token_embeddings(out_tokens, out_vectors)
+    print(len(result_tokens))
     # print(result_tokens[0])
     # print(len(result_vectors[0]))
