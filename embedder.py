@@ -438,13 +438,66 @@ def get_token_embeddings(tokens, vectors):
     return out_tokens, out_vectors
 
 
+
+
+def filter_sentences(line_parts):
+    # input format ['последний', 'c']
+    result = []
+    word = line_parts[0]
+    label = line_parts[1]
+    if len(word):
+        word = word.replace('...', '.').replace('..', '.').replace('""""', '"').replace('"""', '"').replace('\xad', '')
+        word = word.replace('_', '')
+        if '-' in word and len(word) > 1 and not word.endswith('-') and not word.startswith('-'):  # here we split hyphenated tokens by hyphen
+            word_list = word.split('-') #  hyphen can get incorrect label as well here
+            if len(word_list) == 2:
+                result.append([word_list[0].strip(), label])
+                result.append(['-', label])
+                result.append([word_list[1].strip(), label])
+        elif len(word) > 1 and (word.endswith('-') or word.startswith('-')):
+            word = word.replace('-', '')
+            result.append([word, label])
+        else:
+            if len(word):
+                result.append([word, label])
+    return result
+
+
 if __name__ == '__main__':
     # text = ['Оставь надежду всяк сюда входящий.']
     # text = ['Как-то можно беззаботно идти.']
-    text = ['Равновесие тела зависит от точного контроля, осуществляемoй центральной нервной системой над мышцами и суставами бессознательно, но постоянно и динамично.']
+    file_path = '/home/katinska/seq_data/train.tsv'
+    sentences = []
+    with codecs.open(file_path, "r", encoding='utf-8') as f:
+        sentence = []
+        for line in f:
+            line = line.strip()
+            if len(line) > 0:
+                line_parts = line.split()
+                try:
+                    assert (len(line_parts) >= 2)
+                except:
+                    print(line_parts)
+                try:
+                    assert (len(line_parts) == line_length or line_length == None)
+                except:
+                    print(line_parts, line_length)
+                line_parts = [el for el in line_parts if len(el)]
+                line_length = len(line_parts)
+                filtered_parts = filter_sentences(line_parts)
+                for fp in filtered_parts:
+                    sentence.append(fp)
+            elif len(line) == 0 and len(sentence) > 0:
+                sentences.append(' '.joint(sentence))
+                sentence = []
+        if len(sentence) > 0:
+            sentences.append(' '.joint(sentence))
+
+    # text = ['Равновесие тела зависит от точного контроля, осуществляемoй центральной нервной системой над мышцами и суставами бессознательно, но постоянно и динамично.']
     model = Model()
-    out_tokens, out_vectors = model.get_features(text)
-    print(len(text))
-    result_tokens, result_vectors = get_token_embeddings(out_tokens, out_vectors)
-    print(result_tokens[0])
-    print(len(result_vectors[0]))
+    out_tokens, out_vectors = model.get_features(sentences)
+    print(len(sentences))
+    print(out_tokens[:100])
+    # result_tokens, result_vectors = get_token_embeddings(out_tokens, out_vectors)
+    # print(result_tokens[0])
+    # print(len(result_vectors[0]))
