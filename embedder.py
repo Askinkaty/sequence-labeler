@@ -38,11 +38,6 @@ INIT_CHECKPOINT = BERT_PRETRAINED_DIR + '/bert_model.ckpt'
 BATCH_SIZE = 128
 
 
-
-
-
-
-
 class InputExample(object):
 
   def __init__(self, unique_id, text_a, text_b=None):
@@ -327,7 +322,6 @@ class Model:
         examples = read_sequence(input_text)
         features = convert_examples_to_features(
             examples=examples, seq_length=MAX_SEQ_LENGTH, tokenizer=self.tokenizer)
-        print(len(examples))
         unique_id_to_feature = {}
         for feature in features:
             unique_id_to_feature[feature.unique_id] = feature
@@ -352,70 +346,6 @@ class Model:
             result_tokens.append(out_tokens)
             result_vectors.append(out_vectors)
         return result_tokens, result_vectors
-
-
-
-# def get_features(input_text, dim=768):
-#       tf.logging.set_verbosity(tf.logging.INFO)
-#
-#     layer_indexes = LAYERS
-#     bert_config = modeling.BertConfig.from_json_file(BERT_CONFIG)
-#
-#     tokenizer = tokenization.FullTokenizer(
-#         vocab_file=VOCAB_FILE, do_lower_case=True)
-#
-#     is_per_host = tf.contrib.tpu.InputPipelineConfig.PER_HOST_V2
-#     run_config = tf.contrib.tpu.RunConfig(
-#         tpu_config=tf.contrib.tpu.TPUConfig(
-#             num_shards=NUM_TPU_CORES,
-#             per_host_input_for_training=is_per_host))
-#
-#     examples = read_sequence(input_text)
-#
-#     features = convert_examples_to_features(
-#         examples=examples, seq_length=MAX_SEQ_LENGTH, tokenizer=tokenizer)
-#
-#     unique_id_to_feature = {}
-#     for feature in features:
-#         unique_id_to_feature[feature.unique_id] = feature
-#
-#     model_fn = model_fn_builder(
-#         use_tpu=False,
-#         bert_config=bert_config,
-#         init_checkpoint=INIT_CHECKPOINT,
-#         layer_indexes=layer_indexes,
-#         use_one_hot_embeddings=True)
-#
-#     # If TPU is not available, this will fall back to normal Estimator on CPU
-#     # or GPU.
-#     estimator = tf.contrib.tpu.TPUEstimator(
-#         use_tpu=False,
-#         model_fn=model_fn,
-#         config=run_config,
-#         predict_batch_size=BATCH_SIZE,
-#         train_batch_size=BATCH_SIZE)
-#
-#     input_fn = input_fn_builder(
-#         features=features, seq_length=MAX_SEQ_LENGTH)
-#
-#     # Get features
-#     for result in estimator.predict(input_fn, yield_single_examples=True):
-#         unique_id = int(result["unique_id"])
-#         feature = unique_id_to_feature[unique_id]
-#         # output = collections.OrderedDict()
-#         out_tokens = []
-#         out_vectors = []
-#         for (i, token) in enumerate(feature.tokens):
-#             layers = []
-#             for (j, layer_index) in enumerate(layer_indexes):
-#                 layer_output = result["layer_output_%d" % j]
-#                 layer_output_flat = np.array([x for x in layer_output[i:(i + 1)].flat])
-#                 layers.append(layer_output_flat)
-#             out_tokens.append(token)
-#             out_vectors.append(sum(layers)[:dim])
-#             # output[token] = sum(layers)[:dim]
-#     # print('keys ', output.keys())
-#     return out_tokens, out_vectors
 
 
 def get_token_embeddings(tokens_list, vectors_list):

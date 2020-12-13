@@ -345,10 +345,19 @@ class SequenceLabeler(object):
 
         singletons = self.singletons if is_training is True else None
         singletons_prob = self.config["singletons_prob"] if is_training is True else 0.0
+        batch_sentences = []
         for i in range(len(batch)):
             sentence = ' '.join([el[0] for el in batch[i]]).strip()
-            out_tokens, out_vertors = bertModel.get_features([sentence])
-            tokens, tokens_embeddings = get_token_embeddings(out_tokens, out_vertors)
+            batch_sentences.append(sentence)
+        out_tokens, out_vertors = bertModel.get_features(batch_sentences)
+        batch_tokens, batch_tokens_embeddings = get_token_embeddings(out_tokens, out_vertors)
+
+        for i in range(len(batch)):
+            sentence = ' '.join([el[0] for el in batch[i]]).strip()
+            # out_tokens, out_vertors = bertModel.get_features([sentence])
+            # tokens, tokens_embeddings = get_token_embeddings(out_tokens, out_vertors)
+            tokens = batch_tokens[i]
+            tokens_embeddings = batch_tokens_embeddings[i]
             try:
                 assert len(tokens_embeddings) == len(batch[i])
             except:
