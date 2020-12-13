@@ -186,7 +186,7 @@ def get_and_save_bert_embeddings(sentences, out_path, model, mode):
     sent_batch = []
     n = 32
     out_file = mode + '.jsonl'
-    with codecs.open(os.listdir(out_path, out_file), 'w', encoding='utf-8') as f:
+    with codecs.open(os.path.join(out_path, out_file), 'w', encoding='utf-8') as f:
         for i, sentence in enumerate(sentences):
             if len(sent_batch) < n and i < len(sentences):
                 sent_batch.append(sentence)
