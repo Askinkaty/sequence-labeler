@@ -195,7 +195,8 @@ def get_and_save_bert_embeddings(sentences, out_path, model, mode):
                 out_tokens, out_vertors = model.get_features(sent_batch)
                 batch_tokens, batch_tokens_embeddings = get_token_embeddings(out_tokens, out_vertors)
                 for sent in batch_tokens_embeddings:
-                    json.dumps(sent, f, ensure_ascii=False)
+                    f.write(json.dumps(sent, ensure_ascii=False))
+                    f.write('\n')
                 sent_batch = []
 
 
