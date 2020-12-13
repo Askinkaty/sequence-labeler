@@ -327,13 +327,15 @@ class Model:
         examples = read_sequence(input_text)
         features = convert_examples_to_features(
             examples=examples, seq_length=MAX_SEQ_LENGTH, tokenizer=self.tokenizer)
-
+        print(len(examples))
         unique_id_to_feature = {}
         for feature in features:
             unique_id_to_feature[feature.unique_id] = feature
 
         input_fn = input_fn_builder(
             features=features, seq_length=MAX_SEQ_LENGTH)
+        result_tokens = []
+        result_vectors = []
         for result in self.estimator.predict(input_fn, yield_single_examples=True):
             unique_id = int(result["unique_id"])
             feature = unique_id_to_feature[unique_id]
@@ -347,7 +349,9 @@ class Model:
                     layers.append(layer_output_flat)
                 out_tokens.append(token)
                 out_vectors.append(sum(layers)[:self.dim])
-        return out_tokens, out_vectors
+            result_tokens.append(out_tokens)
+            result_vectors.append(out_vectors)
+        return result_tokens, result_vectors
 
 
 
@@ -420,7 +424,7 @@ def get_token_embeddings(tokens, vectors):
     out_tokens = []
     out_vectors = []
     token_piece = ''
-    print(tokens)
+    print('Tokens: ', tokens)
     for i, token in enumerate(tokens):
         if token == '[CLS]':
             continue
@@ -507,6 +511,8 @@ if __name__ == '__main__':
     out_tokens, out_vectors = model.get_features(sentences[:33])
     print(len(sentences))
     # print(out_tokens[:100])
+    print(len(out_tokens))
+    sys.exit()
     result_tokens, result_vectors = get_token_embeddings(out_tokens, out_vectors)
     print(len(result_tokens))
     # print(result_tokens[0])
