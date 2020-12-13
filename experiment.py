@@ -6,6 +6,8 @@ import math
 import os
 import gc
 import codecs
+import json
+
 try:
     import ConfigParser as configparser
 except:
@@ -14,7 +16,7 @@ except:
 
 from labeler import SequenceLabeler
 from evaluator import SequenceLabelingEvaluator
-from embedder import Model
+from embedder import Model, get_token_embeddings
 
 
 def filter_sentences(line_parts):
@@ -180,6 +182,21 @@ def process_sentences(data, labeler, bertModel, is_training, learningrate, confi
     return results
 
 
+def get_and_save_bert_embeddings(sentences, out_path, model, mode):
+    sent_batch = []
+    n = 32
+    out_file = mode + '.jsonl'
+    with codecs.open(os.listdir(out_path, out_file), 'w', encoding='utf-8') as f:
+        for i, sentence in enumerate(sentences):
+            if len(sent_batch) < n and i < len(sentences):
+                sent_batch.append(sentence)
+            elif len(sent_batch) == n or i == len(sentences):
+                out_tokens, out_vertors = model.get_features(sent_batch)
+                batch_tokens, batch_tokens_embeddings = get_token_embeddings(out_tokens, out_vertors)
+                for sent in batch_tokens_embeddings:
+                    json.dumps(sent, f, ensure_ascii=False)
+                sent_batch = []
+
 
 def run_experiment(config_path):
     config = parse_config("config", config_path)
@@ -188,19 +205,25 @@ def run_experiment(config_path):
         random.seed(config["random_seed"])
         numpy.random.seed(config["random_seed"])
 
+    print("Initializing BERT model for contextual embeddings... ")
+    bertModel = Model()
+
     for key, val in config.items():
         print(str(key) + ": " + str(val))
 
     data_train, data_dev, data_test = None, None, None
     if config["path_train"] != None and len(config["path_train"]) > 0:
         data_train = read_input_files(config["path_train"], config["max_train_sent_length"])
+        get_and_save_bert_embeddings(data_train, config['emb_path'], bertModel, 'train')
     if config["path_dev"] != None and len(config["path_dev"]) > 0:
         data_dev = read_input_files(config["path_dev"])
+        get_and_save_bert_embeddings(data_dev, config['emb_path'], bertModel, 'dev')
     if config["path_test"] != None and len(config["path_test"]) > 0:
         data_test = []
         for path_test in config["path_test"].strip().split(":"):
             data_test += read_input_files(path_test)
-
+            get_and_save_bert_embeddings(data_test, config['emb_path'], bertModel, 'test')
+    sys.exit()
     if config["load"] != None and len(config["load"]) > 0:
         labeler = SequenceLabeler.load(config["load"])
     else:
@@ -213,9 +236,6 @@ def run_experiment(config_path):
 
     print("parameter_count: " + str(labeler.get_parameter_count()))
     print("parameter_count_without_word_embeddings: " + str(labeler.get_parameter_count_without_word_embeddings()))
-
-    bertModel = Model()
-    print("Initializing BERT model for contextual embeddings... ")
 
     if data_train is not None:
         model_selector = config["model_selector"].split(":")[0]
