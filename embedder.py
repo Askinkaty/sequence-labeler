@@ -418,37 +418,34 @@ class Model:
 #     return out_tokens, out_vectors
 
 
-def get_token_embeddings(tokens, vectors):
+def get_token_embeddings(tokens_list, vectors_list):
     out_seq = []
     out_seq_vectors = []
-    out_tokens = []
-    out_vectors = []
-    token_piece = ''
-    print('Tokens: ', tokens)
-    for i, token in enumerate(tokens):
-        if token == '[CLS]':
-            continue
-        if token == '[SEP]' and token_piece:
-            print('Separator')
-            out_tokens.append(token_piece)
-            out_vectors.append(vector)
-            out_seq.append(out_tokens)
-            out_seq_vectors.append(out_vectors)
-            out_tokens = []
-            out_vectors = []
-        else:
-            if not token.startswith('##'):
-                if token_piece:
-                    out_tokens.append(token_piece)
-                    out_vectors.append(vector)
-                token_piece = token
-                vector = vectors[i]
+    for j, seq in enumerate(tokens_list):
+        out_tokens = []
+        out_vectors = []
+        token_piece = ''
+        for i, token in enumerate(seq):
+            if token == '[CLS]':
+                continue
+            if token == '[SEP]' and token_piece:
+                out_tokens.append(token_piece)
+                out_vectors.append(vector)
+                out_seq.append(out_tokens)
+                out_seq_vectors.append(out_vectors)
+                out_tokens = []
+                out_vectors = []
             else:
-                token_piece += token.replace('##', '')
-                vector = np.add(vector, vectors[i])
-    assert len(out_tokens) == len(out_vectors)
+                if not token.startswith('##'):
+                    if token_piece:
+                        out_tokens.append(token_piece)
+                        out_vectors.append(vector)
+                    token_piece = token
+                    vector = vectors_list[j][i]
+                else:
+                    token_piece += token.replace('##', '')
+                    vector = np.add(vector, vectors_list[j][i])
     assert len(out_seq) == len(out_seq_vectors)
-    # return out_tokens, out_vectors
     return out_seq, out_seq_vectors
 
 
@@ -512,7 +509,6 @@ if __name__ == '__main__':
     print(len(sentences))
     # print(out_tokens[:100])
     print(len(out_tokens))
-    sys.exit()
     result_tokens, result_vectors = get_token_embeddings(out_tokens, out_vectors)
     print(len(result_tokens))
     # print(result_tokens[0])
