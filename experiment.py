@@ -174,6 +174,8 @@ def process_sentences(data, labeler, is_training, learningrate, config, name):
     evaluator = SequenceLabelingEvaluator(config["main_label"], labeler.label2id, config["conll_eval"])
     batches_of_sentence_ids = create_batches_of_sentence_ids(data, config["batch_equal_size"], config["max_batch_size"])
     embeddings = get_vectors(config, name)
+    print(len(embeddings))
+    print(len(data))
     assert len(embeddings) == len(data)
     if is_training is True:
         random.shuffle(batches_of_sentence_ids)
