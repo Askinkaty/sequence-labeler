@@ -232,17 +232,17 @@ def run_experiment(config_path):
     data_train, data_dev, data_test = None, None, None
     if config["path_train"] != None and len(config["path_train"]) > 0:
         data_train = read_input_files(config["path_train"], config["max_train_sent_length"])
-        if os.path.isfile(os.path.join(config['path_train'], 'train.json')):
+        if not os.path.isfile(os.path.join(config['path_train'], 'train.json')):
             get_and_save_bert_embeddings(data_train, config['emb_path'], bertModel, 'train')
     if config["path_dev"] != None and len(config["path_dev"]) > 0:
         data_dev = read_input_files(config["path_dev"])
-        if os.path.isfile(os.path.join(config['path_dev'], 'dev.json')):
+        if not os.path.isfile(os.path.join(config['path_dev'], 'dev.json')):
             get_and_save_bert_embeddings(data_dev, config['emb_path'], bertModel, 'dev')
     if config["path_test"] != None and len(config["path_test"]) > 0:
         data_test = []
         for path_test in config["path_test"].strip().split(":"):
             data_test += read_input_files(path_test)
-            if os.path.isfile(os.path.join(config['path_test'], 'test.json')):
+            if not os.path.isfile(os.path.join(config['path_test'], 'test.json')):
                 get_and_save_bert_embeddings(data_test, config['emb_path'], bertModel, 'test')
     if config["load"] != None and len(config["load"]) > 0:
         labeler = SequenceLabeler.load(config["load"])
