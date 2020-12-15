@@ -329,7 +329,9 @@ class SequenceLabeler(object):
             raise ValueError("Unable to handle value, no UNK token: " + str(token))
         return token_id
 
-    def create_input_dictionary_for_batch(self, batch, is_training, learningrate, bertModel,
+    def create_input_dictionary_for_batch(self, batch,
+                                          sentence_ids_in_batch,
+                                          is_training, learningrate, embeddings,
                                           bert_emb_dim=None):
         sentence_lengths = numpy.array([len(sentence) for sentence in batch])
         max_sentence_length = sentence_lengths.max()
@@ -345,24 +347,14 @@ class SequenceLabeler(object):
 
         singletons = self.singletons if is_training is True else None
         singletons_prob = self.config["singletons_prob"] if is_training is True else 0.0
-        batch_sentences = []
-        for i in range(len(batch)):
-            sentence = ' '.join([el[0] for el in batch[i]]).strip()
-            batch_sentences.append(sentence)
-        out_tokens, out_vertors = bertModel.get_features(batch_sentences)
-        batch_tokens, batch_tokens_embeddings = get_token_embeddings(out_tokens, out_vertors)
 
         for i in range(len(batch)):
-            sentence = ' '.join([el[0] for el in batch[i]]).strip()
-            # out_tokens, out_vertors = bertModel.get_features([sentence])
-            # tokens, tokens_embeddings = get_token_embeddings(out_tokens, out_vertors)
-            tokens = batch_tokens[i]
-            tokens_embeddings = batch_tokens_embeddings[i]
+            # sentence = ' '.join([el[0] for el in batch[i]]).strip()
+            sentence_id = sentence_ids_in_batch[i]
+            tokens_embeddings = embeddings[sentence_id]
             try:
                 assert len(tokens_embeddings) == len(batch[i])
             except:
-                print(out_tokens)
-                print(tokens)
                 print(batch[i])
             for j in range(len(batch[i])):
                 context_emb[i][j] = tokens_embeddings[j]
@@ -400,9 +392,10 @@ class SequenceLabeler(object):
         viterbi_score = numpy.max(trellis[-1])
         return viterbi, viterbi_score, trellis
 
-    def process_batch(self, batch, is_training, learningrate, bertModel):
-        feed_dict = self.create_input_dictionary_for_batch(batch, is_training, learningrate,
-                                                           bertModel,
+    def process_batch(self, batch, sentence_ids_in_batch, is_training, learningrate, embeddings):
+        feed_dict = self.create_input_dictionary_for_batch(batch, sentence_ids_in_batch,
+                                                           is_training, learningrate,
+                                                           embeddings,
                                                            self.config['bert_emb_dim'])
         if self.config["crf_on_top"] is True:
             cost, scores = self.session.run([self.loss, self.scores] + ([self.train_op] if is_training == True else []), feed_dict=feed_dict)[:2]
