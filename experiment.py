@@ -204,6 +204,8 @@ def get_and_save_bert_embeddings(sentences, out_path, model, mode):
     sent_batch = []
     n = 32
     out_file = mode + '.jsonl'
+    c = 0
+    print(len(sentences))
     with codecs.open(os.path.join(out_path, out_file), 'w', encoding='utf-8') as f:
         for i, sentence in enumerate(sentences):
             if len(sent_batch) < n and i < len(sentences):
@@ -212,6 +214,7 @@ def get_and_save_bert_embeddings(sentences, out_path, model, mode):
             elif len(sent_batch) == n or i == len(sentences):
                 out_tokens, out_vertors = model.get_features(sent_batch)
                 batch_tokens, batch_tokens_embeddings = get_token_embeddings(out_tokens, out_vertors)
+                assert len(batch_tokens_embeddings) == len(sent_batch)
                 for sent in batch_tokens_embeddings:
                     f.write(json.dumps([e.tolist() for e in sent], ensure_ascii=False))
                     f.write('\n')
@@ -234,8 +237,9 @@ def run_experiment(config_path):
     data_train, data_dev, data_test = None, None, None
     if config["path_train"] != None and len(config["path_train"]) > 0:
         data_train = read_input_files(config["path_train"], config["max_train_sent_length"])
-        if not os.path.isfile(os.path.join(config['path_train'], 'train.jsonl')):
-            get_and_save_bert_embeddings(data_train, config['emb_path'], bertModel, 'train')
+        # if not os.path.isfile(os.path.join(config['path_train'], 'train.jsonl')):
+        get_and_save_bert_embeddings(data_train, config['emb_path'], bertModel, 'train')
+    sys.exit()
     if config["path_dev"] != None and len(config["path_dev"]) > 0:
         data_dev = read_input_files(config["path_dev"])
         if not os.path.isfile(os.path.join(config['path_dev'], 'dev.jsonl')):
