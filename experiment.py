@@ -205,7 +205,7 @@ def get_and_save_bert_embeddings(sentences, out_path, model, mode):
     n = 32
     out_file = mode + '.jsonl'
     c = 0
-    print(len(sentences))
+    print('SENTENCES: ', len(sentences))
     with codecs.open(os.path.join(out_path, out_file), 'w', encoding='utf-8') as f:
         for i, sentence in enumerate(sentences):
             if len(sent_batch) < n:
@@ -240,15 +240,16 @@ def run_experiment(config_path):
         print(str(key) + ": " + str(val))
 
     data_train, data_dev, data_test = None, None, None
-    if config["path_train"] != None and len(config["path_train"]) > 0:
-        data_train = read_input_files(config["path_train"], config["max_train_sent_length"])
-        # if not os.path.isfile(os.path.join(config['path_train'], 'train.jsonl')):
-        get_and_save_bert_embeddings(data_train, config['emb_path'], bertModel, 'train')
-    sys.exit()
+    # if config["path_train"] != None and len(config["path_train"]) > 0:
+    #     data_train = read_input_files(config["path_train"], config["max_train_sent_length"])
+    #     # if not os.path.isfile(os.path.join(config['path_train'], 'train.jsonl')):
+    #     get_and_save_bert_embeddings(data_train, config['emb_path'], bertModel, 'train')
+    # sys.exit()
     if config["path_dev"] != None and len(config["path_dev"]) > 0:
         data_dev = read_input_files(config["path_dev"])
-        if not os.path.isfile(os.path.join(config['path_dev'], 'dev.jsonl')):
-            get_and_save_bert_embeddings(data_dev, config['emb_path'], bertModel, 'dev')
+#        if not os.path.isfile(os.path.join(config['path_dev'], 'dev.jsonl')):
+        get_and_save_bert_embeddings(data_dev, config['emb_path'], bertModel, 'dev')
+    sys.exit()
     if config["path_test"] != None and len(config["path_test"]) > 0:
         data_test = []
         for path_test in config["path_test"].strip().split(":"):
