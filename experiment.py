@@ -208,10 +208,15 @@ def get_and_save_bert_embeddings(sentences, out_path, model, mode):
     print(len(sentences))
     with codecs.open(os.path.join(out_path, out_file), 'w', encoding='utf-8') as f:
         for i, sentence in enumerate(sentences):
-            if len(sent_batch) < n and i < len(sentences):
+            if len(sent_batch) < n:
                 sentence = ' '.join([el[0] for el in sentence]).strip()
                 sent_batch.append(sentence)
-            elif len(sent_batch) == n or i == len(sentences):
+                c += 1
+            if len(sent_batch) == n or i == len(sentences) - 1:
+                if len(sent_batch) < n:
+                    sentence = ' '.join([el[0] for el in sentence]).strip()
+                    sent_batch.append(sentence)
+                    c += 1
                 out_tokens, out_vertors = model.get_features(sent_batch)
                 batch_tokens, batch_tokens_embeddings = get_token_embeddings(out_tokens, out_vertors)
                 assert len(batch_tokens_embeddings) == len(sent_batch)
@@ -219,7 +224,7 @@ def get_and_save_bert_embeddings(sentences, out_path, model, mode):
                     f.write(json.dumps([e.tolist() for e in sent], ensure_ascii=False))
                     f.write('\n')
                 sent_batch = []
-
+    print(c)
 
 def run_experiment(config_path):
     config = parse_config("config", config_path)
