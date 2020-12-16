@@ -331,7 +331,7 @@ class SequenceLabeler(object):
 
     def create_input_dictionary_for_batch(self, batch,
                                           sentence_ids_in_batch,
-                                          is_training, learningrate, embeddings,
+                                          is_training, learningrate, embeddings, token_list,
                                           bert_emb_dim=None):
         sentence_lengths = numpy.array([len(sentence) for sentence in batch])
         max_sentence_length = sentence_lengths.max()
@@ -352,9 +352,13 @@ class SequenceLabeler(object):
             # sentence = ' '.join([el[0] for el in batch[i]]).strip()
             sentence_id = sentence_ids_in_batch[i]
             tokens_embeddings = embeddings[sentence_id]
+            tokens = token_list[sentence_id]
             try:
-                assert len(tokens_embeddings) == len(batch[i])
+                assert len(tokens_embeddings) == len(batch[i]) == len(tokens)
             except:
+                print(tokens)
+                print(len(tokens_embeddings))
+                print(len(batch[1]))
                 print(batch[i])
             for j in range(len(batch[i])):
                 context_emb[i][j] = tokens_embeddings[j]
@@ -392,10 +396,10 @@ class SequenceLabeler(object):
         viterbi_score = numpy.max(trellis[-1])
         return viterbi, viterbi_score, trellis
 
-    def process_batch(self, batch, sentence_ids_in_batch, is_training, learningrate, embeddings):
+    def process_batch(self, batch, sentence_ids_in_batch, is_training, learningrate, embeddings, token_list):
         feed_dict = self.create_input_dictionary_for_batch(batch, sentence_ids_in_batch,
                                                            is_training, learningrate,
-                                                           embeddings,
+                                                           embeddings, token_list,
                                                            self.config['bert_emb_dim'])
         if self.config["crf_on_top"] is True:
             cost, scores = self.session.run([self.loss, self.scores] + ([self.train_op] if is_training == True else []), feed_dict=feed_dict)[:2]

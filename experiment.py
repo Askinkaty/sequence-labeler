@@ -158,13 +158,19 @@ def create_batches_of_sentence_ids(sentences, batch_equal_size, max_batch_size):
 def get_vectors(config, mode):
     path_to_embeddings = config['emb_path']
     file_name = mode + '.jsonl'
+    token_file_name = mode + '_tokens.jsonl'
     embedding_list = []
+    token_list = []
     with open(os.path.join(path_to_embeddings, file_name), 'r') as f:
         for line in f:
             sent = json.loads(line)
             sent = [numpy.asarray(el, dtype=numpy.float32) for el in sent]
             embedding_list.append(sent)
-    return embedding_list
+    with open(os.path.join(path_to_embeddings, token_file_name), 'r') as tf:
+        for line in tf:
+            sent = json.loads(line)
+            token_list.append(sent)
+    return embedding_list, token_list
 
 
 def process_sentences(data, labeler, is_training, learningrate, config, name):
@@ -173,7 +179,7 @@ def process_sentences(data, labeler, is_training, learningrate, config, name):
     """
     evaluator = SequenceLabelingEvaluator(config["main_label"], labeler.label2id, config["conll_eval"])
     batches_of_sentence_ids = create_batches_of_sentence_ids(data, config["batch_equal_size"], config["max_batch_size"])
-    embeddings = get_vectors(config, name)
+    embeddings, token_list = get_vectors(config, name)
     print(len(embeddings))
     print(len(data))
     assert len(embeddings) == len(data)
@@ -185,7 +191,8 @@ def process_sentences(data, labeler, is_training, learningrate, config, name):
         cost, predicted_labels, predicted_probs = labeler.process_batch(batch, sentence_ids_in_batch,
                                                                         is_training,
                                                                         learningrate,
-                                                                        embeddings)
+                                                                        embeddings,
+                                                                        token_list)
 
         evaluator.append_data(cost, batch, predicted_labels)
 
@@ -196,36 +203,42 @@ def process_sentences(data, labeler, is_training, learningrate, config, name):
     results = evaluator.get_results(name)
     for key in results:
         print(key + ": " + str(results[key]))
-
     return results
 
 
-def write_batch(model, batch, file):
+def write_batch(model, batch, file, token_file):
     out_tokens, out_vertors = model.get_features(batch)
     batch_tokens, batch_tokens_embeddings = get_token_embeddings(out_tokens, out_vertors)
-    assert len(batch_tokens_embeddings) == len(batch)
-    for sent in batch_tokens_embeddings:
+    assert len(batch_tokens_embeddings) == len(batch) == len(batch_tokens)
+    for k, sent in enumerate(batch_tokens_embeddings):
         file.write(json.dumps([e.tolist() for e in sent], ensure_ascii=False))
         file.write('\n')
+        token_file.write(json.dumps(batch_tokens[k], ensure_ascii=False))
+        token_file.write('\n')
+
 
 def get_and_save_bert_embeddings(sentences, out_path, model, mode):
     sent_batch = []
     n = 32
     out_file = mode + '.jsonl'
+    out_token_file = mode + '_tokens.jsonl'
     c = 0
     print('SENTENCES: ', len(sentences))
     with codecs.open(os.path.join(out_path, out_file), 'w', encoding='utf-8') as f:
-        for i, sentence in enumerate(sentences):
-            if len(sent_batch) < n:
-                sentence = ' '.join([el[0] for el in sentence]).strip()
-                sent_batch.append(sentence)
-                c += 1
-                if i == (len(sentences) - 1):
-                    write_batch(model, sent_batch, f)
-            if len(sent_batch) == n:
-                write_batch(model, sent_batch, f)
-                sent_batch = []
+        with codecs.open(os.path.join(out_path, out_token_file), 'w', encoding='utf-8') as tf:
+            for i, sentence in enumerate(sentences):
+                if len(sent_batch) < n:
+                    sentence = ' '.join([el[0] for el in sentence]).strip()
+                    sent_batch.append(sentence)
+                    c += 1
+                    if i == (len(sentences) - 1):
+                        write_batch(model, sent_batch, f, tf)
+                if len(sent_batch) == n:
+                    write_batch(model, sent_batch, f. tf)
+                    sent_batch = []
     print(c)
+    assert len(sentences) == c
+
 
 def run_experiment(config_path):
     config = parse_config("config", config_path)
