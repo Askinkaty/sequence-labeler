@@ -200,6 +200,14 @@ def process_sentences(data, labeler, is_training, learningrate, config, name):
     return results
 
 
+def write_batch(model, batch, file):
+    out_tokens, out_vertors = model.get_features(batch)
+    batch_tokens, batch_tokens_embeddings = get_token_embeddings(out_tokens, out_vertors)
+    assert len(batch_tokens_embeddings) == len(batch)
+    for sent in batch_tokens_embeddings:
+        file.write(json.dumps([e.tolist() for e in sent], ensure_ascii=False))
+        file.write('\n')
+
 def get_and_save_bert_embeddings(sentences, out_path, model, mode):
     sent_batch = []
     n = 32
@@ -212,17 +220,10 @@ def get_and_save_bert_embeddings(sentences, out_path, model, mode):
                 sentence = ' '.join([el[0] for el in sentence]).strip()
                 sent_batch.append(sentence)
                 c += 1
-            if len(sent_batch) == n or i == len(sentences) - 1:
-                if len(sent_batch) < n:
-                    sentence = ' '.join([el[0] for el in sentence]).strip()
-                    sent_batch.append(sentence)
-                    c += 1
-                out_tokens, out_vertors = model.get_features(sent_batch)
-                batch_tokens, batch_tokens_embeddings = get_token_embeddings(out_tokens, out_vertors)
-                assert len(batch_tokens_embeddings) == len(sent_batch)
-                for sent in batch_tokens_embeddings:
-                    f.write(json.dumps([e.tolist() for e in sent], ensure_ascii=False))
-                    f.write('\n')
+                if i == (len(sentences) - 1):
+                    write_batch(model, sent_batch, f)
+            if len(sent_batch) == n:
+                write_batch(model, sent_batch, f)
                 sent_batch = []
     print(c)
 
