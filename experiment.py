@@ -225,16 +225,16 @@ def get_and_save_bert_embeddings(sentences, out_path, model, mode):
     c = 0
     print('SENTENCES: ', len(sentences))
     with codecs.open(os.path.join(out_path, out_file), 'w', encoding='utf-8') as f:
-        with codecs.open(os.path.join(out_path, out_token_file), 'w', encoding='utf-8') as tf:
+        with codecs.open(os.path.join(out_path, out_token_file), 'w', encoding='utf-8') as tok_f:
             for i, sentence in enumerate(sentences):
                 if len(sent_batch) < n:
                     sentence = ' '.join([el[0] for el in sentence]).strip()
                     sent_batch.append(sentence)
                     c += 1
                     if i == (len(sentences) - 1):
-                        write_batch(model, sent_batch, f, tf)
+                        write_batch(model, sent_batch, f, tok_f)
                 if len(sent_batch) == n:
-                    write_batch(model, sent_batch, f, tf)
+                    write_batch(model, sent_batch, f, tok_f)
                     sent_batch = []
     print(c)
     assert len(sentences) == c
