@@ -103,7 +103,7 @@ class SequenceLabeler(object):
         self.label_ids = tf.placeholder(tf.int32, [None, None], name="label_ids")
         self.learningrate = tf.placeholder(tf.float32, name="learningrate")
         self.is_training = tf.placeholder(tf.int32, name="is_training")
-        self.context_emb = tf.placeholder(tf.float32, [None, None, self.config['bert_emb_dim']], name="context_emb") #  ???
+        self.context_emb = tf.placeholder(tf.float32, [None, None, self.config['bert_emb_dim']], name="context_emb")
         self.loss = 0.0
         input_tensor = None
         input_vector_size = 0

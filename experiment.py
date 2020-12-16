@@ -20,7 +20,6 @@ from embedder import Model, get_token_embeddings
 
 
 def filter_sentences(line_parts):
-    # input format ['последний', 'c']
     result = []
     word = line_parts[0]
     label = line_parts[1]
@@ -180,8 +179,6 @@ def process_sentences(data, labeler, is_training, learningrate, config, name):
     evaluator = SequenceLabelingEvaluator(config["main_label"], labeler.label2id, config["conll_eval"])
     batches_of_sentence_ids = create_batches_of_sentence_ids(data, config["batch_equal_size"], config["max_batch_size"])
     embeddings, token_list = get_vectors(config, name)
-    print(len(embeddings))
-    print(len(data))
     assert len(embeddings) == len(data)
     if is_training is True:
         random.shuffle(batches_of_sentence_ids)
@@ -223,7 +220,6 @@ def get_and_save_bert_embeddings(sentences, out_path, model, mode):
     out_file = mode + '.jsonl'
     out_token_file = mode + '_tokens.jsonl'
     c = 0
-    print('SENTENCES: ', len(sentences))
     with codecs.open(os.path.join(out_path, out_file), 'w', encoding='utf-8') as f:
         with codecs.open(os.path.join(out_path, out_token_file), 'w', encoding='utf-8') as tok_f:
             for i, sentence in enumerate(sentences):
@@ -236,7 +232,6 @@ def get_and_save_bert_embeddings(sentences, out_path, model, mode):
                 if len(sent_batch) == n:
                     write_batch(model, sent_batch, f, tok_f)
                     sent_batch = []
-    print(c)
     assert len(sentences) == c
 
 
@@ -256,19 +251,18 @@ def run_experiment(config_path):
     data_train, data_dev, data_test = None, None, None
     if config["path_train"] != None and len(config["path_train"]) > 0:
         data_train = read_input_files(config["path_train"], config["max_train_sent_length"])
-        if not os.path.isfile(os.path.join(config['path_train'], 'train.jsonl')):
-           get_and_save_bert_embeddings(data_train, config['emb_path'], bertModel, 'train')
-    # sys.exit()
+        if not os.path.exists(os.path.join(config['path_train'], 'train.jsonl')):
+            random.shuffle(data_train)
+            get_and_save_bert_embeddings(data_train, config['emb_path'], bertModel, 'train')
     if config["path_dev"] != None and len(config["path_dev"]) > 0:
         data_dev = read_input_files(config["path_dev"])
-        if not os.path.isfile(os.path.join(config['path_dev'], 'dev.jsonl')):
+        if not os.path.exists(os.path.join(config['path_dev'], 'dev.jsonl')):
             get_and_save_bert_embeddings(data_dev, config['emb_path'], bertModel, 'dev')
-    # sys.exit()
     if config["path_test"] != None and len(config["path_test"]) > 0:
         data_test = []
         for path_test in config["path_test"].strip().split(":"):
             data_test += read_input_files(path_test)
-            if not os.path.isfile(os.path.join(config['path_test'], 'test.jsonl')):
+            if not os.path.exists(os.path.join(config['path_test'], 'test.jsonl')):
                 get_and_save_bert_embeddings(data_test, config['emb_path'], bertModel, 'test')
     if config["load"] != None and len(config["load"]) > 0:
         labeler = SequenceLabeler.load(config["load"])
@@ -292,8 +286,6 @@ def run_experiment(config_path):
         for epoch in range(config["epochs"]):
             print("EPOCH: " + str(epoch))
             print("current_learningrate: " + str(learningrate))
-            random.shuffle(data_train)
-
             results_train = process_sentences(data_train, labeler, is_training=True,
                                               learningrate=learningrate,
                                               config=config, name="train")

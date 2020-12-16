@@ -380,7 +380,6 @@ def get_token_embeddings(tokens_list, vectors_list):
 
 
 def filter_sentences(line_parts):
-    # input format ['последний', 'c']
     result = []
     word = line_parts[0]
     label = line_parts[1]
