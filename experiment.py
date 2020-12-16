@@ -234,7 +234,7 @@ def get_and_save_bert_embeddings(sentences, out_path, model, mode):
                     if i == (len(sentences) - 1):
                         write_batch(model, sent_batch, f, tf)
                 if len(sent_batch) == n:
-                    write_batch(model, sent_batch, f. tf)
+                    write_batch(model, sent_batch, f, tf)
                     sent_batch = []
     print(c)
     assert len(sentences) == c
