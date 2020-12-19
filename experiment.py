@@ -384,9 +384,9 @@ def interate_epochs(config, labeler, data_train, data_dev, data_test, temp_model
 
 def run(config, config_path, bertModel):
     temp_model_path = config_path + ".model"
-    data_train, data_dev, data_test = get_train_test_dev(config_path['path_train'],
-                                                         config_path['path_dev'],
-                                                         config_path['path_test'], config, bertModel)
+    data_train, data_dev, data_test = get_train_test_dev(config['path_train'],
+                                                         config['path_dev'],
+                                                         config['path_test'], config, bertModel)
 
     labeler = load_model(config, data_train, data_dev, data_test)
     interate_epochs(config, labeler, data_train, data_dev, data_test, temp_model_path)
