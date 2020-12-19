@@ -3,7 +3,7 @@
 #SBATCH --account=project_2002016
 #SBATCH --job-name=seq_ged
 #SBATCH --partition=gpu
-#SBATCH --cpus-per-task=10
+#SBATCH --cpus-per-task=8
 #SBATCH --mem=32G
 #SBATCH --ntasks=1
 #SBATCH --time=48:00:00
