@@ -65,6 +65,7 @@ class SequenceLabelingEvaluator(object):
         results[name + "_accuracy"] = self.correct_sum / float(self.token_count)
         results[name + "_token_count"] = self.token_count
         results[name + "_time"] = float(time.time()) - float(self.start_time)
+        results[name + "_correct_sum"] = self.correct_sum
 
         if self.label2id is not None and self.conll_eval == True:
             conll_counts = conlleval.evaluate(self.conll_format)

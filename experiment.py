@@ -194,7 +194,7 @@ def process_sentences(data, labeler, is_training, learningrate, config, name):
         evaluator.append_data(cost, batch, predicted_labels)
 
         word_ids, char_ids, char_mask, label_ids = None, None, None, None
-        while config["garbage_collection"] == True and gc.collect() > 0:
+        while config["garbage_collection"] is True and gc.collect() > 0:
             pass
 
     results = evaluator.get_results(name)
@@ -235,9 +235,183 @@ def get_and_save_bert_embeddings(sentences, out_path, model, mode):
     assert len(sentences) == c
 
 
+def combine_train(cv_path, train_files, i):
+    f_out = codecs.open(os.path.join(cv_path, 'train' + str(i) + '.csv'), "w")
+    for t_f in train_files:
+        with codecs.open(os.path.join(cv_path, t_f), "r", encoding='utf-8') as f:
+            for line in f:
+                f_out.write(line)
+
+
+def get_train_test_dev(path_train, path_dev, path_test, config, bertModel):
+    data_train = read_input_files(path_train, config["max_train_sent_length"])
+    if not os.path.exists(os.path.join(path_train, 'train.jsonl')):
+        random.shuffle(data_train)
+        get_and_save_bert_embeddings(data_train, config['emb_path'], bertModel, 'train')
+    data_dev = read_input_files(path_dev)
+    if not os.path.exists(os.path.join(path_dev, 'dev.jsonl')):
+        get_and_save_bert_embeddings(data_dev, config['emb_path'], bertModel, 'dev')
+    data_test = read_input_files(path_test)
+    if not os.path.exists(os.path.join(path_test, 'test.jsonl')):
+        get_and_save_bert_embeddings(data_test, config['emb_path'], bertModel, 'test')
+    return data_train, data_dev, data_test
+
+
+def prepare_folds(fold_files, i, cv_path):
+    dev_fold = fold_files[i]
+    test_fold = fold_files[-1 + i]
+    train_folds = []
+    for j in range(len(fold_files)):
+        if j != i and j != (-1 + i):
+            train_folds.append(fold_files[j])
+    assert len(train_folds) == len(fold_files) - 2
+    combine_train(cv_path, train_folds, i)
+    return dev_fold, test_fold
+
+
+def run_cv(config, config_path, bertModel):
+    temp_model_path = config_path + ".model"
+    cv_path = config['cv_path']
+    fold_files = os.listdir(cv_path)
+    all_results = []
+    for i in range(len(fold_files)):
+        dev_file, test_file = prepare_folds(fold_files, i, cv_path)
+        data_train, data_dev, data_test = get_train_test_dev(os.path.join(cv_path, 'train' + str(i) + '.csv'),
+                                                             os.path.join(cv_path, dev_file),
+                                                             os.path.join(cv_path, test_file))
+        labeler = load_model(config, data_train, data_dev, data_test)
+        results_train, results_dev, results_test = interate_epochs(config, labeler, data_train,
+                                                                   data_dev, data_test, temp_model_path)
+        all_results.append((results_train, results_dev, results_test))
+    main_correct_counts = 0
+    main_predicted_counts = 0
+    main_total_counts = 0
+    correct_sum = 0
+    token_count = 0
+    for f in all_results:
+        test_result = f[2]
+        main_correct_counts += test_result.get('test_main_correct_count')
+        main_predicted_counts += test_result.get('test_main_predicted_count')
+        main_total_counts += test_result.get('test_main_total_count')
+        correct_sum += test_result.get('test_correct_sum')
+        token_count += test_result.get('test_token_count')
+    # calculate average results for all folds here
+    total_p = (float(main_correct_counts) / float(main_predicted_counts)) if (main_predicted_counts > 0) else 0.0
+    total_r = (float(main_correct_counts) / float(main_total_counts)) if (main_total_counts > 0) else 0.0
+    f = (2.0 * total_p * total_r / (total_p + total_r)) if (total_p + total_r > 0.0) else 0.0
+    f05 = ((1.0 + 0.5 * 0.5) * total_p * total_r / ((0.5 * 0.5 * total_p) + total_r)) if (total_p + total_r > 0.0) else 0.0
+    accuracy = correct_sum / float(token_count)
+    print('CV Precision: ', total_p)
+    print('CV Recall: ', total_r)
+    print('CV F0.5: ', f05)
+    print('CV F-measure: ', f)
+    print('CV Accuracy: ', accuracy)
+
+
+def load_model(config, data_train, data_dev, data_test):
+    if config["load"] != None and len(config["load"]) > 0:
+        labeler = SequenceLabeler.load(config["load"])
+    else:
+        labeler = SequenceLabeler(config)
+        labeler.build_vocabs(data_train, data_dev, data_test, config["preload_vectors"])
+        labeler.construct_network()
+        labeler.initialize_session()
+        if config["preload_vectors"] is not None:
+            labeler.preload_word_embeddings(config["preload_vectors"])
+    print("parameter_count: " + str(labeler.get_parameter_count()))
+    print("parameter_count_without_word_embeddings: " + str(labeler.get_parameter_count_without_word_embeddings()))
+    return labeler
+
+
+def interate_epochs(config, labeler, data_train, data_dev, data_test, temp_model_path):
+    if data_train is not None:
+        model_selector = config["model_selector"].split(":")[0]
+        model_selector_type = config["model_selector"].split(":")[1]
+        best_selector_value = 0.0
+        best_epoch = -1
+        learningrate = config["learningrate"]
+        for epoch in range(config["epochs"]):
+            print("EPOCH: " + str(epoch))
+            print("current_learningrate: " + str(learningrate))
+            results_train = process_sentences(data_train, labeler, is_training=True,
+                                              learningrate=learningrate,
+                                              config=config, name="train")
+
+            if data_dev is not None:
+                results_dev = process_sentences(data_dev, labeler, is_training=False,
+                                                learningrate=0.0,
+                                                config=config, name="dev")
+
+                if math.isnan(results_dev["dev_cost_sum"]) or math.isinf(results_dev["dev_cost_sum"]):
+                    sys.stderr.write("ERROR: Cost is NaN or Inf. Exiting.\n")
+                    break
+
+                if (epoch == 0 or (model_selector_type == "high" and results_dev[model_selector] > best_selector_value)
+                               or (model_selector_type == "low" and results_dev[model_selector] < best_selector_value)):
+                    best_epoch = epoch
+                    best_selector_value = results_dev[model_selector]
+                    labeler.saver.save(labeler.session, temp_model_path,
+                                       latest_filename=os.path.basename(temp_model_path)+".checkpoint")
+                print("best_epoch: " + str(best_epoch))
+
+                if config["stop_if_no_improvement_for_epochs"] > 0 \
+                        and (epoch - best_epoch) >= config["stop_if_no_improvement_for_epochs"]:
+                    break
+
+                if (epoch - best_epoch) > 3:
+                    learningrate *= config["learningrate_decay"]
+
+            while config["garbage_collection"] == True and gc.collect() > 0:
+                pass
+
+        if data_dev is not None and best_epoch >= 0:
+            # loading the best model so far
+            labeler.saver.restore(labeler.session, temp_model_path)
+
+            os.remove(temp_model_path+".checkpoint")
+            os.remove(temp_model_path+".data-00000-of-00001")
+            os.remove(temp_model_path+".index")
+            os.remove(temp_model_path+".meta")
+
+    if config["save"] is not None and len(config["save"]) > 0:
+        labeler.save(config["save"])
+
+    if data_test is not None:
+        results_test = process_sentences(data_test, labeler, is_training=False,
+                                         learningrate=0.0, config=config, name="test")
+    return results_train, results_dev, results_test
+
+
+def run(config, config_path, bertModel):
+    temp_model_path = config_path + ".model"
+    data_train, data_dev, data_test = get_train_test_dev(config_path['path_train'],
+                                                         config_path['path_dev'],
+                                                         config_path['path_test'], config, bertModel)
+
+    labeler = load_model(config, data_train, data_dev, data_test)
+    interate_epochs(config, labeler, data_train, data_dev, data_test, temp_model_path)
+
+
+def run_experiment_new(config_path):
+    config = parse_config("config", config_path)
+    if "random_seed" in config:
+        random.seed(config["random_seed"])
+        numpy.random.seed(config["random_seed"])
+
+    print("Initializing BERT model for contextual embeddings... ")
+    bertModel = Model()
+
+    for key, val in config.items():
+        print(str(key) + ": " + str(val))
+
+    if config['cv']:
+        run_cv(config, config_path, bertModel)
+    else:
+        run(config, config_path, bertModel)
+
+
 def run_experiment(config_path):
     config = parse_config("config", config_path)
-    temp_model_path = config_path + ".model"
     if "random_seed" in config:
         random.seed(config["random_seed"])
         numpy.random.seed(config["random_seed"])
@@ -249,6 +423,7 @@ def run_experiment(config_path):
         print(str(key) + ": " + str(val))
 
     data_train, data_dev, data_test = None, None, None
+
     if config["path_train"] != None and len(config["path_train"]) > 0:
         data_train = read_input_files(config["path_train"], config["max_train_sent_length"])
         if not os.path.exists(os.path.join(config['path_train'], 'train.jsonl')):
@@ -337,5 +512,5 @@ def run_experiment(config_path):
 
 
 if __name__ == "__main__":
-    run_experiment(sys.argv[1])
+    run_experiment_new(sys.argv[1])
 
