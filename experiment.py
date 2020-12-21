@@ -279,6 +279,7 @@ def run_cv(config, config_path, bertModel):
     all_results = []
     for i in range(len(fold_files)):
         dev_file, test_file = prepare_folds(fold_files, i, cv_path)
+        sys.exit()
         data_train, data_dev, data_test = get_train_test_dev(os.path.join(cv_path, 'train' + str(i) + '.csv'),
                                                              os.path.join(cv_path, dev_file),
                                                              os.path.join(cv_path, test_file),config, bertModel)
