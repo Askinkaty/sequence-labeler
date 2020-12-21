@@ -262,10 +262,8 @@ def prepare_folds(fold_files, i, cv_path):
     test_fold = fold_files[-1 + i]
     train_folds = []
     for j in range(len(fold_files)):
-        if j != i and j != (-1 + i):
+        if j != i or j != (-1 + i):
             train_folds.append(fold_files[j])
-    print(len(train_folds))
-    print(len(fold_files))
     assert len(train_folds) == len(fold_files) - 2
     combine_train(cv_path, train_folds, i)
     print(f'Created fold {i}')
