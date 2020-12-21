@@ -236,11 +236,11 @@ def get_and_save_bert_embeddings(sentences, out_path, model, mode):
 
 
 def combine_train(cv_path, train_files, i):
-    f_out = codecs.open(os.path.join(cv_path, 'train' + str(i) + '.csv'), "w")
-    for t_f in train_files:
-        with codecs.open(os.path.join(cv_path, t_f), "r", encoding='utf-8') as f:
-            for line in f:
-                f_out.write(line)
+    with codecs.open(os.path.join(cv_path, 'train' + str(i) + '.csv'), "w") as f_out:
+        for t_f in train_files:
+            with codecs.open(os.path.join(cv_path, t_f), "r", encoding='utf-8') as f:
+                for line in f:
+                    f_out.write(line)
 
 
 def get_train_test_dev(path_train, path_dev, path_test, config, bertModel):
@@ -266,6 +266,7 @@ def prepare_folds(fold_files, i, cv_path):
             train_folds.append(fold_files[j])
     assert len(train_folds) == len(fold_files) - 2
     combine_train(cv_path, train_folds, i)
+    print(f'Created fold {i}')
     return dev_fold, test_fold
 
 
@@ -278,7 +279,8 @@ def run_cv(config, config_path, bertModel):
         dev_file, test_file = prepare_folds(fold_files, i, cv_path)
         data_train, data_dev, data_test = get_train_test_dev(os.path.join(cv_path, 'train' + str(i) + '.csv'),
                                                              os.path.join(cv_path, dev_file),
-                                                             os.path.join(cv_path, test_file))
+                                                             os.path.join(cv_path, test_file),config, bertModel)
+        sys.exit()
         labeler = load_model(config, data_train, data_dev, data_test)
         results_train, results_dev, results_test = interate_epochs(config, labeler, data_train,
                                                                    data_dev, data_test, temp_model_path)
@@ -409,6 +411,9 @@ def run_experiment_new(config_path):
     else:
         run(config, config_path, bertModel)
 
+
+# So I have no answer to the question why I think you're good. I'm just sure you're, that's it.
+# Yep, apparently cannot mentalize everything.
 
 def run_experiment(config_path):
     config = parse_config("config", config_path)
