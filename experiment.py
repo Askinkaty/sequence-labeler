@@ -244,16 +244,16 @@ def combine_train(cv_path, train_files, i):
                     f_out.write(line)
 
 
-def get_train_test_dev(path_train, path_dev, path_test, config, bertModel):
+def get_train_test_dev(data_path, path_train, path_dev, path_test, config, bertModel):
     data_train = read_input_files(path_train, config["max_train_sent_length"])
-    if not os.path.exists(os.path.join(path_train, 'train.jsonl')):
+    if not os.path.exists(os.path.join(data_path, 'train.jsonl')):
         random.shuffle(data_train)
         get_and_save_bert_embeddings(data_train, config['emb_path'], bertModel, 'train')
     data_dev = read_input_files(path_dev)
-    if not os.path.exists(os.path.join(path_dev, 'dev.jsonl')):
+    if not os.path.exists(os.path.join(data_path, 'dev.jsonl')):
         get_and_save_bert_embeddings(data_dev, config['emb_path'], bertModel, 'dev')
     data_test = read_input_files(path_test)
-    if not os.path.exists(os.path.join(path_test, 'test.jsonl')):
+    if not os.path.exists(os.path.join(data_path, 'test.jsonl')):
         get_and_save_bert_embeddings(data_test, config['emb_path'], bertModel, 'test')
     return data_train, data_dev, data_test
 
@@ -281,9 +281,10 @@ def run_cv(config, config_path, bertModel):
     for i in range(len(fold_files)):
         tf.reset_default_graph()
         dev_file, test_file = prepare_folds(fold_files, i, cv_path)
-        data_train, data_dev, data_test = get_train_test_dev(os.path.join(cv_path, 'train' + str(i) + '.csv'),
+        data_train, data_dev, data_test = get_train_test_dev(cv_path,
+                                                             os.path.join(cv_path, 'train' + str(i) + '.csv'),
                                                              os.path.join(cv_path, dev_file),
-                                                             os.path.join(cv_path, test_file),config, bertModel)
+                                                             os.path.join(cv_path, test_file), config, bertModel)
         labeler = load_model(config, data_train, data_dev, data_test)
         results_train, results_dev, results_test = interate_epochs(config, labeler, data_train,
                                                                    data_dev, data_test, temp_model_path)
