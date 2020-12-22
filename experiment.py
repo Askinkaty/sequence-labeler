@@ -7,6 +7,7 @@ import os
 import gc
 import codecs
 import json
+import tensorflow as tf
 
 try:
     import ConfigParser as configparser
@@ -278,6 +279,7 @@ def run_cv(config, config_path, bertModel):
     fold_files = os.listdir(cv_path)
     all_results = []
     for i in range(len(fold_files)):
+        tf.reset_default_graph()
         dev_file, test_file = prepare_folds(fold_files, i, cv_path)
         data_train, data_dev, data_test = get_train_test_dev(os.path.join(cv_path, 'train' + str(i) + '.csv'),
                                                              os.path.join(cv_path, dev_file),
