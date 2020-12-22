@@ -246,15 +246,15 @@ def combine_train(cv_path, train_files, i):
 
 def get_train_test_dev(data_path, path_train, path_dev, path_test, config, bertModel):
     data_train = read_input_files(path_train, config["max_train_sent_length"])
-    if not os.path.exists(os.path.join(data_path, 'train.jsonl')):
-        random.shuffle(data_train)
-        get_and_save_bert_embeddings(data_train, config['emb_path'], bertModel, 'train')
+    # if not os.path.exists(os.path.join(data_path, 'train.jsonl')):
+    random.shuffle(data_train)
+    get_and_save_bert_embeddings(data_train, config['emb_path'], bertModel, 'train')
     data_dev = read_input_files(path_dev)
-    if not os.path.exists(os.path.join(data_path, 'dev.jsonl')):
-        get_and_save_bert_embeddings(data_dev, config['emb_path'], bertModel, 'dev')
+    # if not os.path.exists(os.path.join(data_path, 'dev.jsonl')):
+    get_and_save_bert_embeddings(data_dev, config['emb_path'], bertModel, 'dev')
     data_test = read_input_files(path_test)
-    if not os.path.exists(os.path.join(data_path, 'test.jsonl')):
-        get_and_save_bert_embeddings(data_test, config['emb_path'], bertModel, 'test')
+    # if not os.path.exists(os.path.join(data_path, 'test.jsonl')):
+    get_and_save_bert_embeddings(data_test, config['emb_path'], bertModel, 'test')
     return data_train, data_dev, data_test
 
 
@@ -273,6 +273,11 @@ def prepare_folds(fold_files, i, cv_path):
     return dev_fold, test_fold
 
 
+def save_results(config, results, i):
+    with codecs.open(os.path.join(config['cv_path'], 'result' + str(i) + '.json'), 'w') as out:
+        out.write(json.dumps(results, ensure_ascii=False))
+
+
 def run_cv(config, config_path, bertModel):
     temp_model_path = config_path + ".model"
     cv_path = config['cv_path']
@@ -288,6 +293,7 @@ def run_cv(config, config_path, bertModel):
         labeler = load_model(config, data_train, data_dev, data_test)
         results_train, results_dev, results_test = interate_epochs(config, labeler, data_train,
                                                                    data_dev, data_test, temp_model_path)
+        save_results(config, results_test)
         all_results.append((results_train, results_dev, results_test))
         print(f'Done with fold: {i}')
     main_correct_counts = 0
@@ -308,6 +314,12 @@ def run_cv(config, config_path, bertModel):
     f = (2.0 * total_p * total_r / (total_p + total_r)) if (total_p + total_r > 0.0) else 0.0
     f05 = ((1.0 + 0.5 * 0.5) * total_p * total_r / ((0.5 * 0.5 * total_p) + total_r)) if (total_p + total_r > 0.0) else 0.0
     accuracy = correct_sum / float(token_count)
+    with codecs.open(os.path.join(config['cv_path'], 'cv_result.txt'), 'w') as final:
+        final.write('CV Precision: ' + str(total_p) + '\n')
+        final.write('CV Recall: ' + str(total_r) + '\n')
+        final.write('CV F0.5: ' + str(f05) + '\n')
+        final.write('F-measure: ' + str(f) + '\n')
+        final.write('CV ACC: ' + str(accuracy) + '\n')
     print('CV Precision: ', total_p)
     print('CV Recall: ', total_r)
     print('CV F0.5: ', f05)
