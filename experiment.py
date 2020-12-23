@@ -180,6 +180,8 @@ def process_sentences(data, labeler, is_training, learningrate, config, name):
     evaluator = SequenceLabelingEvaluator(config["main_label"], labeler.label2id, config["conll_eval"])
     batches_of_sentence_ids = create_batches_of_sentence_ids(data, config["batch_equal_size"], config["max_batch_size"])
     embeddings, token_list = get_vectors(config, name)
+    print(len(data))
+    print(len(embeddings))
     assert len(embeddings) == len(data)
     if is_training is True:
         random.shuffle(batches_of_sentence_ids)
@@ -278,6 +280,12 @@ def save_results(config, results, i):
         out.write(json.dumps(results, ensure_ascii=False))
 
 
+def remove_ebm_files(config):
+    to_remove = ['train', 'train_tokens', 'dev', 'dev_tokens', 'test', 'test_tokens']
+    for f in to_remove:
+        os.remove(os.path.join(config['cv_path'], f))
+
+
 def run_cv(config, config_path, bertModel):
     temp_model_path = config_path + ".model"
     cv_path = config['cv_path']
@@ -295,7 +303,9 @@ def run_cv(config, config_path, bertModel):
                                                                    data_dev, data_test, temp_model_path)
         save_results(config, results_test, i)
         all_results.append((results_train, results_dev, results_test))
+        remove_ebm_files(config)
         print(f'Done with fold: {i}')
+
     main_correct_counts = 0
     main_predicted_counts = 0
     main_total_counts = 0
