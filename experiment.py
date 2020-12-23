@@ -293,7 +293,7 @@ def run_cv(config, config_path, bertModel):
         labeler = load_model(config, data_train, data_dev, data_test)
         results_train, results_dev, results_test = interate_epochs(config, labeler, data_train,
                                                                    data_dev, data_test, temp_model_path)
-        save_results(config, results_test)
+        save_results(config, results_test, i)
         all_results.append((results_train, results_dev, results_test))
         print(f'Done with fold: {i}')
     main_correct_counts = 0
