@@ -283,7 +283,7 @@ def save_results(config, results, i):
 def remove_ebm_files(config):
     to_remove = ['train', 'train_tokens', 'dev', 'dev_tokens', 'test', 'test_tokens']
     for f in to_remove:
-        os.remove(os.path.join(config['cv_path'], f))
+        os.remove(os.path.join(config['cv_path'], f + '.jsonl'))
 
 
 def run_cv(config, config_path, bertModel):
