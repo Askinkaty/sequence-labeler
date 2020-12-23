@@ -235,6 +235,7 @@ def get_and_save_bert_embeddings(sentences, out_path, model, mode):
                 if len(sent_batch) == n:
                     write_batch(model, sent_batch, f, tok_f)
                     sent_batch = []
+    print('sentences: ', len(sentences))
     assert len(sentences) == c
 
 
@@ -267,11 +268,14 @@ def prepare_folds(fold_files, i, cv_path):
     for j in range(len(fold_files)):
         if fold_files[j] != test_fold and fold_files[j] != dev_fold:
             train_folds.append(fold_files[j])
+    print(train_folds)
     print(len(train_folds))
     print(len(fold_files))
     assert len(train_folds) == len(fold_files) - 2
     combine_train(cv_path, train_folds, i)
     print(f'Created fold {i}')
+    print(dev_fold)
+    print(test_fold)
     return dev_fold, test_fold
 
 
@@ -292,6 +296,7 @@ def run_cv(config, config_path, bertModel):
     fold_files = os.listdir(cv_path)
     all_results = []
     for i in range(len(fold_files)):
+        i = 1
         tf.reset_default_graph()
         dev_file, test_file = prepare_folds(fold_files, i, cv_path)
         data_train, data_dev, data_test = get_train_test_dev(cv_path,
@@ -305,6 +310,7 @@ def run_cv(config, config_path, bertModel):
         all_results.append((results_train, results_dev, results_test))
         remove_ebm_files(config)
         print(f'Done with fold: {i}')
+        sys.exit()
 
     main_correct_counts = 0
     main_predicted_counts = 0
