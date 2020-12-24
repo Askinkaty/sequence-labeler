@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 #SBATCH --account=project_2002016
-#SBATCH --job-name=seq_ged
+#SBATCH --job-name=seq_rulec
 #SBATCH --partition=gpu
 #SBATCH --cpus-per-task=4
 #SBATCH --mem=32G
