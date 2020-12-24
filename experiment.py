@@ -230,9 +230,7 @@ def get_and_save_bert_embeddings(sentences, out_path, model, mode):
                     sentence = ' '.join([el[0] for el in sentence]).strip()
                     sent_batch.append(sentence)
                     c += 1
-                    if i == (len(sentences) - 1):
-                        write_batch(model, sent_batch, f, tok_f)
-                if len(sent_batch) == n:
+                if len(sent_batch) == n or i == (len(sentences) - 1):
                     write_batch(model, sent_batch, f, tok_f)
                     sent_batch = []
     print('sentences: ', len(sentences))
@@ -296,7 +294,6 @@ def run_cv(config, config_path, bertModel):
     fold_files = os.listdir(cv_path)
     all_results = []
     for i in range(len(fold_files)):
-        i = 1
         tf.reset_default_graph()
         dev_file, test_file = prepare_folds(fold_files, i, cv_path)
         data_train, data_dev, data_test = get_train_test_dev(cv_path,
@@ -310,8 +307,6 @@ def run_cv(config, config_path, bertModel):
         all_results.append((results_train, results_dev, results_test))
         remove_ebm_files(config)
         print(f'Done with fold: {i}')
-        sys.exit()
-
     main_correct_counts = 0
     main_predicted_counts = 0
     main_total_counts = 0
