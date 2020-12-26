@@ -200,10 +200,12 @@ def process_sentences(data, labeler, is_training, learningrate, config, name):
         while config["garbage_collection"] is True and gc.collect() > 0:
             pass
 
-    results = evaluator.get_results(name)
+    results, conll_format_preds = evaluator.get_results(name)
+
     for key in results:
         print(key + ": " + str(results[key]))
-    return results
+
+    return results, conll_format_preds
 
 
 def write_batch(model, batch, file, token_file):
@@ -282,6 +284,12 @@ def save_results(config, results, i):
         out.write(json.dumps(results, ensure_ascii=False))
 
 
+def save_test_fold_preds(config, conll_data, i):
+    with codecs.opens(os.path.join(config['cv_path'], 'conll_test_out_' + str(i) + '.txt'), 'w') as out:
+        for el in conll_data:
+            out.write(el)
+
+
 def remove_ebm_files(config):
     to_remove = ['train', 'train_tokens', 'dev', 'dev_tokens', 'test', 'test_tokens']
     for f in to_remove:
@@ -301,9 +309,10 @@ def run_cv(config, config_path, bertModel):
                                                              os.path.join(cv_path, dev_file),
                                                              os.path.join(cv_path, test_file), config, bertModel)
         labeler = load_model(config, data_train, data_dev, data_test)
-        results_train, results_dev, results_test = interate_epochs(config, labeler, data_train,
+        results_train, results_dev, results_test, conll_format_preds = interate_epochs(config, labeler, data_train,
                                                                    data_dev, data_test, temp_model_path)
         save_results(config, results_test, i)
+        save_test_fold_preds(config, conll_format_preds, i)
         all_results.append((results_train, results_dev, results_test))
         remove_ebm_files(config)
         print(f'Done with fold: {i}')
@@ -363,12 +372,12 @@ def interate_epochs(config, labeler, data_train, data_dev, data_test, temp_model
         for epoch in range(config["epochs"]):
             print("EPOCH: " + str(epoch))
             print("current_learningrate: " + str(learningrate))
-            results_train = process_sentences(data_train, labeler, is_training=True,
+            results_train, _ = process_sentences(data_train, labeler, is_training=True,
                                               learningrate=learningrate,
                                               config=config, name="train")
 
             if data_dev is not None:
-                results_dev = process_sentences(data_dev, labeler, is_training=False,
+                results_dev, _ = process_sentences(data_dev, labeler, is_training=False,
                                                 learningrate=0.0,
                                                 config=config, name="dev")
 
@@ -407,9 +416,9 @@ def interate_epochs(config, labeler, data_train, data_dev, data_test, temp_model
         labeler.save(config["save"])
 
     if data_test is not None:
-        results_test = process_sentences(data_test, labeler, is_training=False,
+        results_test, conll_format_preds = process_sentences(data_test, labeler, is_training=False,
                                          learningrate=0.0, config=config, name="test")
-    return results_train, results_dev, results_test
+    return results_train, results_dev, results_test, conll_format_preds
 
 
 def run(config, config_path, bertModel):

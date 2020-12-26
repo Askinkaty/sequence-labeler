@@ -79,7 +79,9 @@ class SequenceLabelingEvaluator(object):
 #                results[name + "_conll_r_" + str(i)] = m.rec
 #                results[name + "_conll_f_" + str(i)] = m.fscore #str(m.fscore) + " " + str(conll_counts.t_found_guessed[i])
 
-        return results
+        return results, self.conll_format
+
+
 
 
 
