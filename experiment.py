@@ -285,7 +285,7 @@ def save_results(config, results, i):
 
 
 def save_test_fold_preds(config, conll_data, i):
-    with codecs.opens(os.path.join(config['cv_path'], 'conll_test_out_' + str(i) + '.txt'), 'w') as out:
+    with codecs.open(os.path.join(config['cv_path'], 'conll_test_out_' + str(i) + '.txt'), 'w') as out:
         for el in conll_data:
             out.write(el)
 
