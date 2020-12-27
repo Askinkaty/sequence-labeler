@@ -287,9 +287,9 @@ def save_results(config, results, i):
 def save_test_fold_preds(config, conll_data, i):
     with codecs.open(os.path.join(config['cv_path'], 'conll_test_out_' + str(i) + '.txt'), 'w') as out:
         for el in conll_data:
-            out.write(el)
+            out.write(el + '\n')
             out.write('\n')
-        
+
 
 def remove_ebm_files(config):
     to_remove = ['train', 'train_tokens', 'dev', 'dev_tokens', 'test', 'test_tokens']
