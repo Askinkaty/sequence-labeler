@@ -430,7 +430,12 @@ def run(config, config_path, bertModel):
                                                          config['path_test'], config, bertModel)
 
     labeler = load_model(config, data_train, data_dev, data_test)
-    interate_epochs(config, labeler, data_train, data_dev, data_test, temp_model_path)
+    retults_train, results_dev, results_test, conll_format_preds = interate_epochs(config, labeler, data_train,
+                                                                                   data_dev, data_test,
+                                                                                   temp_model_path)
+    save_results(config, results_test, config['path_test'])
+    save_test_fold_preds(config, conll_format_preds, config['path_test'])
+    remove_ebm_files(config)
 
 
 def run_experiment_new(config_path):
