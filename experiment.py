@@ -433,8 +433,8 @@ def run(config, config_path, bertModel):
     retults_train, results_dev, results_test, conll_format_preds = interate_epochs(config, labeler, data_train,
                                                                                    data_dev, data_test,
                                                                                    temp_model_path)
-    save_results(config, results_test, config['path_test'])
-    save_test_fold_preds(config, conll_format_preds, config['path_test'])
+    save_results(config, results_test, 'test')
+    save_test_fold_preds(config, conll_format_preds, 'test')
     remove_ebm_files(config)
 
 
