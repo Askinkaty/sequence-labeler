@@ -8,6 +8,7 @@ import gc
 import codecs
 import json
 import tensorflow as tf
+from sklearn.metrics import precision_score, recall_score
 
 try:
     import ConfigParser as configparser
@@ -194,7 +195,7 @@ def process_sentences(data, labeler, is_training, learningrate, config, name):
                                                                         embeddings,
                                                                         token_list)
 
-        evaluator.append_data(cost, batch, predicted_labels)
+        true, predicted = evaluator.append_data(cost, batch, predicted_labels)
 
         word_ids, char_ids, char_mask, label_ids = None, None, None, None
         while config["garbage_collection"] is True and gc.collect() > 0:
@@ -205,7 +206,7 @@ def process_sentences(data, labeler, is_training, learningrate, config, name):
     for key in results:
         print(key + ": " + str(results[key]))
 
-    return results, conll_format_preds
+    return results, conll_format_preds, true, predicted
 
 
 def write_batch(model, batch, file, token_file):
@@ -279,7 +280,10 @@ def prepare_folds(fold_files, i, cv_path):
     return dev_fold, test_fold
 
 
-def save_results(config, results, i):
+def save_results(config, results, true, predicted, i):
+    precision, recall = get_macro_precision_recall(true, predicted)
+    results['precision_macro'] = precision
+    results['recall_macro'] = recall
     with codecs.open(os.path.join(config['cv_path'], 'result' + str(i) + '.json'), 'w') as out:
         out.write(json.dumps(results, ensure_ascii=False))
 
@@ -310,9 +314,13 @@ def run_cv(config, config_path, bertModel):
                                                              os.path.join(cv_path, dev_file),
                                                              os.path.join(cv_path, test_file), config, bertModel)
         labeler = load_model(config, data_train, data_dev, data_test)
-        results_train, results_dev, results_test, conll_format_preds = interate_epochs(config, labeler, data_train,
-                                                                   data_dev, data_test, temp_model_path)
-        save_results(config, results_test, i)
+        results_train, results_dev, results_test, conll_format_preds, true, predicted = interate_epochs(config,
+                                                                                                        labeler,
+                                                                                                        data_train,
+                                                                                                        data_dev,
+                                                                                                        data_test,
+                                                                                                        temp_model_path)
+        save_results(config, results_test, true, predicted, i)
         save_test_fold_preds(config, conll_format_preds, i)
         all_results.append((results_train, results_dev, results_test))
         remove_ebm_files(config)
@@ -373,12 +381,12 @@ def interate_epochs(config, labeler, data_train, data_dev, data_test, temp_model
         for epoch in range(config["epochs"]):
             print("EPOCH: " + str(epoch))
             print("current_learningrate: " + str(learningrate))
-            results_train, _ = process_sentences(data_train, labeler, is_training=True,
+            results_train, _, _, _ = process_sentences(data_train, labeler, is_training=True,
                                               learningrate=learningrate,
                                               config=config, name="train")
 
             if data_dev is not None:
-                results_dev, _ = process_sentences(data_dev, labeler, is_training=False,
+                results_dev, _, _, _ = process_sentences(data_dev, labeler, is_training=False,
                                                 learningrate=0.0,
                                                 config=config, name="dev")
 
@@ -417,10 +425,15 @@ def interate_epochs(config, labeler, data_train, data_dev, data_test, temp_model
         labeler.save(config["save"])
 
     if data_test is not None:
-        results_test, conll_format_preds = process_sentences(data_test, labeler, is_training=False,
+        results_test, conll_format_preds, true, predicted = process_sentences(data_test, labeler, is_training=False,
                                          learningrate=0.0, config=config, name="test")
-    return results_train, results_dev, results_test, conll_format_preds
+    return results_train, results_dev, results_test, conll_format_preds, true, predicted
 
+
+def get_macro_precision_recall(true, predicted):
+    p_macro = precision_score(true, predicted, average='macro')
+    r_macro = recall_score(true, predicted, average='macro')
+    return p_macro, r_macro
 
 def run(config, config_path, bertModel):
     temp_model_path = config_path + ".model"
@@ -430,12 +443,16 @@ def run(config, config_path, bertModel):
                                                          config['path_test'], config, bertModel)
 
     labeler = load_model(config, data_train, data_dev, data_test)
-    retults_train, results_dev, results_test, conll_format_preds = interate_epochs(config, labeler, data_train,
-                                                                                   data_dev, data_test,
-                                                                                   temp_model_path)
-    save_results(config, results_test, 'test')
+    retults_train, results_dev, results_test, conll_format_preds, true, predicted = interate_epochs(config,
+                                                                                                    labeler,
+                                                                                                    data_train,
+                                                                                                    data_dev,
+                                                                                                    data_test,
+                                                                                                    temp_model_path)
+    save_results(config, results_test, true, predicted, 'test')
     save_test_fold_preds(config, conll_format_preds, 'test')
     remove_ebm_files(config)
+
 
 
 def run_experiment_new(config_path):

@@ -26,12 +26,15 @@ class SequenceLabelingEvaluator(object):
 
     def append_data(self, cost, batch, predicted_labels):
         self.cost_sum += cost
+        true = []
+        predicted = []
         for i in range(len(batch)):
             for j in range(len(batch[i])):
                 token = batch[i][j][0]
                 gold_label = batch[i][j][-1]
                 predicted_label = self.id2label[predicted_labels[i][j]]
-
+                true.append(gold_label)
+                predicted.append(predicted_label)
                 self.token_count += 1
                 if gold_label == predicted_label:
                     self.correct_sum += 1
@@ -44,6 +47,7 @@ class SequenceLabelingEvaluator(object):
 
                 self.conll_format.append(token + "\t" + gold_label + "\t" + predicted_label)
             self.conll_format.append("")
+        return true, predicted
 
 
     def get_results(self, name):
