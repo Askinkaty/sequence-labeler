@@ -284,6 +284,9 @@ def save_results(config, results, true, predicted, i):
     precision, recall = get_macro_precision_recall(true, predicted)
     results['precision_macro'] = precision
     results['recall_macro'] = recall
+    precision_micro, recall_micro = get_micro_precision_recall(true, predicted)
+    results['precision_micro'] = precision_micro
+    results['recall_micro'] = recall_micro
     with codecs.open(os.path.join(config['cv_path'], 'result' + str(i) + '.json'), 'w') as out:
         out.write(json.dumps(results, ensure_ascii=False))
 
@@ -434,6 +437,13 @@ def get_macro_precision_recall(true, predicted):
     p_macro = precision_score(true, predicted, average='macro')
     r_macro = recall_score(true, predicted, average='macro')
     return p_macro, r_macro
+
+
+def get_micro_precision_recall(true, predicted):
+    p_micro = precision_score(true, predicted, average='micro')
+    r_micro = recall_score(true, predicted, average='micro')
+    return p_micro, r_micro
+
 
 def run(config, config_path, bertModel):
     temp_model_path = config_path + ".model"
