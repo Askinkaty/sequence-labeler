@@ -15,7 +15,6 @@ try:
 except:
     import configparser
 
-
 from labeler import SequenceLabeler
 from evaluator import SequenceLabelingEvaluator
 from embedder import Model, get_token_embeddings
@@ -28,8 +27,9 @@ def filter_sentences(line_parts):
     if len(word):
         word = word.replace('...', '.').replace('..', '.').replace('""""', '"').replace('"""', '"').replace('\xad', '')
         word = word.replace('_', '')
-        if '-' in word and len(word) > 1 and not word.endswith('-') and not word.startswith('-'):  # here we split hyphenated tokens by hyphen
-            word_list = word.split('-') #  hyphen can get incorrect label as well here
+        if '-' in word and len(word) > 1 and not word.endswith('-') and not word.startswith(
+                '-'):  # here we split hyphenated tokens by hyphen
+            word_list = word.split('-')  # hyphen can get incorrect label as well here
             if len(word_list) == 2:
                 result.append([word_list[0].strip(), label])
                 result.append(['-', label])
@@ -59,11 +59,11 @@ def read_input_files(file_paths, max_sentence_length=-1):
                 if len(line) > 0:
                     line_parts = line.split()
                     try:
-                        assert(len(line_parts) >= 2)
+                        assert (len(line_parts) >= 2)
                     except:
                         print(line_parts)
                     try:
-                        assert(len(line_parts) == line_length or line_length == None)
+                        assert (len(line_parts) == line_length or line_length == None)
                     except:
                         print(line_parts, line_length)
                     line_parts = [el for el in line_parts if len(el)]
@@ -79,6 +79,7 @@ def read_input_files(file_paths, max_sentence_length=-1):
                 if max_sentence_length <= 0 or len(sentence) <= max_sentence_length:
                     sentences.append(sentence)
     return sentences
+
 
 def parse_config(config_section, config_path):
     """
@@ -147,7 +148,7 @@ def create_batches_of_sentence_ids(sentences, batch_equal_size, max_batch_size):
             if len(sentences[i]) > max_sentence_length:
                 max_sentence_length = len(sentences[i])
             if (max_batch_size > 0 and len(current_batch) >= max_batch_size) \
-              or (max_batch_size <= 0 and len(current_batch)*max_sentence_length >= (-1 * max_batch_size)):
+                    or (max_batch_size <= 0 and len(current_batch) * max_sentence_length >= (-1 * max_batch_size)):
                 batches_of_sentence_ids.append(current_batch)
                 current_batch = []
                 max_sentence_length = 0
@@ -195,7 +196,7 @@ def process_sentences(data, labeler, is_training, learningrate, config, name):
                                                                         embeddings,
                                                                         token_list)
 
-        true, predicted = evaluator.append_data(cost, batch, predicted_labels)
+        true, predicted, true_target, predicted_target = evaluator.append_data(cost, batch, predicted_labels)
 
         word_ids, char_ids, char_mask, label_ids = None, None, None, None
         while config["garbage_collection"] is True and gc.collect() > 0:
@@ -206,7 +207,7 @@ def process_sentences(data, labeler, is_training, learningrate, config, name):
     for key in results:
         print(key + ": " + str(results[key]))
 
-    return results, conll_format_preds, true, predicted
+    return results, conll_format_preds, true, predicted, true_target, predicted_target
 
 
 def write_batch(model, batch, file, token_file):
@@ -280,13 +281,20 @@ def prepare_folds(fold_files, i, cv_path):
     return dev_fold, test_fold
 
 
-def save_results(config, results, true, predicted, i):
+def save_results(config, results, true, predicted, i, true_target, predicted_target):
     precision, recall = get_macro_precision_recall(true, predicted)
     results['precision_macro'] = precision
     results['recall_macro'] = recall
     precision_micro, recall_micro = get_micro_precision_recall(true, predicted)
     results['precision_micro'] = precision_micro
     results['recall_micro'] = recall_micro
+    ###
+    t_precision, t_recall = get_macro_precision_recall(true_target, predicted_target)
+    results['t_precision_macro'] = t_precision
+    results['t_recall_macro'] = t_recall
+    t_precision_mi, t_recall_mi = get_micro_precision_recall(true_target, predicted_target)
+    results['t_precision_micro'] = t_precision_mi
+    results['t_recall_micro'] = t_recall_mi
     with codecs.open(os.path.join(config['cv_path'], 'result' + str(i) + '.json'), 'w') as out:
         out.write(json.dumps(results, ensure_ascii=False))
 
@@ -317,13 +325,14 @@ def run_cv(config, config_path, bertModel):
                                                              os.path.join(cv_path, dev_file),
                                                              os.path.join(cv_path, test_file), config, bertModel)
         labeler = load_model(config, data_train, data_dev, data_test)
-        results_train, results_dev, results_test, conll_format_preds, true, predicted = interate_epochs(config,
-                                                                                                        labeler,
-                                                                                                        data_train,
-                                                                                                        data_dev,
-                                                                                                        data_test,
-                                                                                                        temp_model_path)
-        save_results(config, results_test, true, predicted, i)
+        results_train, results_dev, results_test, conll_format_preds, \
+        true, predicted, true_target, predicted_target = interate_epochs(config,
+                                                                         labeler,
+                                                                         data_train,
+                                                                         data_dev,
+                                                                         data_test,
+                                                                         temp_model_path)
+        save_results(config, results_test, true, predicted, i, true_target, predicted_target)
         save_test_fold_preds(config, conll_format_preds, i)
         all_results.append((results_train, results_dev, results_test))
         remove_ebm_files(config)
@@ -344,7 +353,8 @@ def run_cv(config, config_path, bertModel):
     total_p = (float(main_correct_counts) / float(main_predicted_counts)) if (main_predicted_counts > 0) else 0.0
     total_r = (float(main_correct_counts) / float(main_total_counts)) if (main_total_counts > 0) else 0.0
     f = (2.0 * total_p * total_r / (total_p + total_r)) if (total_p + total_r > 0.0) else 0.0
-    f05 = ((1.0 + 0.5 * 0.5) * total_p * total_r / ((0.5 * 0.5 * total_p) + total_r)) if (total_p + total_r > 0.0) else 0.0
+    f05 = ((1.0 + 0.5 * 0.5) * total_p * total_r / ((0.5 * 0.5 * total_p) + total_r)) if (
+            total_p + total_r > 0.0) else 0.0
     accuracy = correct_sum / float(token_count)
     with codecs.open(os.path.join(config['cv_path'], 'cv_result.txt'), 'w') as final:
         final.write('CV Precision: ' + str(total_p) + '\n')
@@ -384,25 +394,25 @@ def interate_epochs(config, labeler, data_train, data_dev, data_test, temp_model
         for epoch in range(config["epochs"]):
             print("EPOCH: " + str(epoch))
             print("current_learningrate: " + str(learningrate))
-            results_train, _, _, _ = process_sentences(data_train, labeler, is_training=True,
-                                              learningrate=learningrate,
-                                              config=config, name="train")
+            results_train, _, _, _, _, _ = process_sentences(data_train, labeler, is_training=True,
+                                                             learningrate=learningrate,
+                                                             config=config, name="train")
 
             if data_dev is not None:
-                results_dev, _, _, _ = process_sentences(data_dev, labeler, is_training=False,
-                                                learningrate=0.0,
-                                                config=config, name="dev")
+                results_dev, _, _, _, _, _ = process_sentences(data_dev, labeler, is_training=False,
+                                                               learningrate=0.0,
+                                                               config=config, name="dev")
 
                 if math.isnan(results_dev["dev_cost_sum"]) or math.isinf(results_dev["dev_cost_sum"]):
                     sys.stderr.write("ERROR: Cost is NaN or Inf. Exiting.\n")
                     break
 
                 if (epoch == 0 or (model_selector_type == "high" and results_dev[model_selector] > best_selector_value)
-                               or (model_selector_type == "low" and results_dev[model_selector] < best_selector_value)):
+                        or (model_selector_type == "low" and results_dev[model_selector] < best_selector_value)):
                     best_epoch = epoch
                     best_selector_value = results_dev[model_selector]
                     labeler.saver.save(labeler.session, temp_model_path,
-                                       latest_filename=os.path.basename(temp_model_path)+".checkpoint")
+                                       latest_filename=os.path.basename(temp_model_path) + ".checkpoint")
                 print("best_epoch: " + str(best_epoch))
 
                 if config["stop_if_no_improvement_for_epochs"] > 0 \
@@ -419,18 +429,22 @@ def interate_epochs(config, labeler, data_train, data_dev, data_test, temp_model
             # loading the best model so far
             labeler.saver.restore(labeler.session, temp_model_path)
 
-            os.remove(temp_model_path+".checkpoint")
-            os.remove(temp_model_path+".data-00000-of-00001")
-            os.remove(temp_model_path+".index")
-            os.remove(temp_model_path+".meta")
+            os.remove(temp_model_path + ".checkpoint")
+            os.remove(temp_model_path + ".data-00000-of-00001")
+            os.remove(temp_model_path + ".index")
+            os.remove(temp_model_path + ".meta")
 
     if config["save"] is not None and len(config["save"]) > 0:
         labeler.save(config["save"])
 
     if data_test is not None:
-        results_test, conll_format_preds, true, predicted = process_sentences(data_test, labeler, is_training=False,
-                                         learningrate=0.0, config=config, name="test")
-    return results_train, results_dev, results_test, conll_format_preds, true, predicted
+        results_test, conll_format_preds, true, predicted, true_target, predicted_target = process_sentences(data_test,
+                                                                                                             labeler,
+                                                                                                             is_training=False,
+                                                                                                             learningrate=0.0,
+                                                                                                             config=config,
+                                                                                                             name="test")
+    return results_train, results_dev, results_test, conll_format_preds, true, predicted, true_target, predicted_target
 
 
 def get_macro_precision_recall(true, predicted):
@@ -453,16 +467,16 @@ def run(config, config_path, bertModel):
                                                          config['path_test'], config, bertModel)
 
     labeler = load_model(config, data_train, data_dev, data_test)
-    retults_train, results_dev, results_test, conll_format_preds, true, predicted = interate_epochs(config,
-                                                                                                    labeler,
-                                                                                                    data_train,
-                                                                                                    data_dev,
-                                                                                                    data_test,
-                                                                                                    temp_model_path)
+    retults_train, results_dev, results_test, conll_format_preds, \
+    true, predicted, true_target, predicted_target = interate_epochs(config,
+                                                                     labeler,
+                                                                     data_train,
+                                                                     data_dev,
+                                                                     data_test,
+                                                                     temp_model_path)
     save_results(config, results_test, true, predicted, 'test')
     save_test_fold_preds(config, conll_format_preds, 'test')
     remove_ebm_files(config)
-
 
 
 def run_experiment_new(config_path):
@@ -550,14 +564,16 @@ def run_experiment(config_path):
                     sys.stderr.write("ERROR: Cost is NaN or Inf. Exiting.\n")
                     break
 
-                if (epoch == 0 or (model_selector_type == "high" and results_dev[model_selector] > best_selector_value) 
-                               or (model_selector_type == "low" and results_dev[model_selector] < best_selector_value)):
+                if (epoch == 0 or (model_selector_type == "high" and results_dev[model_selector] > best_selector_value)
+                        or (model_selector_type == "low" and results_dev[model_selector] < best_selector_value)):
                     best_epoch = epoch
                     best_selector_value = results_dev[model_selector]
-                    labeler.saver.save(labeler.session, temp_model_path, latest_filename=os.path.basename(temp_model_path)+".checkpoint")
+                    labeler.saver.save(labeler.session, temp_model_path,
+                                       latest_filename=os.path.basename(temp_model_path) + ".checkpoint")
                 print("best_epoch: " + str(best_epoch))
 
-                if config["stop_if_no_improvement_for_epochs"] > 0 and (epoch - best_epoch) >= config["stop_if_no_improvement_for_epochs"]:
+                if config["stop_if_no_improvement_for_epochs"] > 0 and (epoch - best_epoch) >= config[
+                    "stop_if_no_improvement_for_epochs"]:
                     break
 
                 if (epoch - best_epoch) > 3:
@@ -570,10 +586,10 @@ def run_experiment(config_path):
             # loading the best model so far
             labeler.saver.restore(labeler.session, temp_model_path)
 
-            os.remove(temp_model_path+".checkpoint")
-            os.remove(temp_model_path+".data-00000-of-00001")
-            os.remove(temp_model_path+".index")
-            os.remove(temp_model_path+".meta")
+            os.remove(temp_model_path + ".checkpoint")
+            os.remove(temp_model_path + ".data-00000-of-00001")
+            os.remove(temp_model_path + ".index")
+            os.remove(temp_model_path + ".meta")
 
     if config["save"] is not None and len(config["save"]) > 0:
         labeler.save(config["save"])
@@ -583,10 +599,9 @@ def run_experiment(config_path):
         for path_test in config["path_test"].strip().split(":"):
             data_test = read_input_files(path_test)
             results_test = process_sentences(data_test, labeler, is_training=False,
-                                             learningrate=0.0, config=config, name="test"+str(i))
+                                             learningrate=0.0, config=config, name="test" + str(i))
             i += 1
 
 
 if __name__ == "__main__":
     run_experiment_new(sys.argv[1])
-
