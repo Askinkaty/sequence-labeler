@@ -474,7 +474,7 @@ def run(config, config_path, bertModel):
                                                                      data_dev,
                                                                      data_test,
                                                                      temp_model_path)
-    save_results(config, results_test, true, predicted, 'test')
+    save_results(config, results_test, true, predicted, 'test', true_target, predicted_target)
     save_test_fold_preds(config, conll_format_preds, 'test')
     remove_ebm_files(config)
 
